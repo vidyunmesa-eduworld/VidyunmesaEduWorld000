@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, Component, ErrorInfo } from 'react';
 import { ViewState, SmartNote, Language, Theme, SocialLink } from './types';
 import { STATIC_NOTES, LibraryItem } from './notesData';
@@ -153,14 +154,14 @@ const translations = {
 
 // --- Future Proofing: Error Boundary ---
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
