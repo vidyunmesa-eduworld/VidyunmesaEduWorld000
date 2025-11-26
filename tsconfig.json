@@ -14,7 +14,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting - Relaxed for Production Build Success */
+    /* Linting - Relaxed for Vercel Success */
     "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
