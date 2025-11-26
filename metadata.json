@@ -1,0 +1,12 @@
+{
+  "name": "Vidyunmesā EduWorld",
+  "description": "Organized Notes & Practice for SSC, Railway & State Exams — Study smart, practice better!",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3069/3069172.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "requestFramePermissions": []
+}
