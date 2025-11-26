@@ -591,16 +591,20 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
                         border: 1px solid #eee !important;
                     }
 
-                    /* Watermark Logic: OVERLAY MODE (Z-Index Boost) */
+                    /* Watermark Logic: FIXED OVERLAY MODE */
                     .print-watermark {
                         display: flex !important;
                         visibility: visible !important;
-                        position: fixed !important;
+                        position: fixed !important; /* Fixed ensures repeat on every page */
                         top: 0; left: 0; right: 0; bottom: 0;
-                        z-index: 99999 !important; /* Moved to top */
-                        opacity: 0.1 !important; /* Low opacity to see text through */
+                        width: 100vw !important;
+                        height: 100vh !important;
+                        z-index: 2147483647 !important; /* Topmost layer */
+                        opacity: 0.15 !important; /* Slightly clearer opacity */
                         pointer-events: none !important;
-                        mix-blend-mode: multiply !important; /* Blends with text */
+                        background: transparent !important;
+                        align-items: center;
+                        justify-content: center;
                     }
                 }
             `;
@@ -624,7 +628,7 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
   const youtubeId = getYouTubeId(rawNote?.youtubeUrl);
 
   return (
-      <div className="min-h-screen bg-[#f8f9fa] pb-40 font-sans relative">
+      <div className="min-h-screen bg-[#f8f9fa]/80 backdrop-blur-sm pb-40 font-sans relative">
           
           {/* HEADER (Hidden in Print via CSS) */}
           <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b shadow-sm px-4 py-3 no-print">
@@ -715,11 +719,11 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
           {/* PRINT PORTAL WRAPPER: This ID is crucial for the CSS fix */}
           <div id="printable-content" className="max-w-3xl mx-auto p-4 md:p-8 space-y-12 relative z-10">
               
-              {/* WATERMARK (Visible in Print) */}
-              <div className="fixed inset-0 pointer-events-none z-[-1] hidden print-watermark flex-wrap content-center justify-center overflow-hidden mix-blend-multiply bg-transparent" aria-hidden="true">
+              {/* WATERMARK (Visible in Print) - FIXED OVERLAY */}
+              <div className="print-watermark" aria-hidden="true">
                    <div className="w-full h-full flex flex-col items-center justify-center rotate-[-30deg] scale-125">
                       {Array.from({ length: 20 }).map((_, i) => (
-                          <div key={i} className="text-4xl font-black text-black whitespace-nowrap my-8 uppercase tracking-widest select-none opacity-10">
+                          <div key={i} className="text-4xl font-black text-slate-900 whitespace-nowrap my-8 uppercase tracking-widest select-none opacity-20">
                               Vidyunmesā EduWorld &nbsp; • &nbsp; Vidyunmesā EduWorld &nbsp; • &nbsp; Vidyunmesā EduWorld
                           </div>
                       ))}

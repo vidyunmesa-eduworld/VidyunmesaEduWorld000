@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, Component, ErrorInfo } from 'react';
+
+import React, { useState, useEffect, useMemo, ErrorInfo } from 'react';
 import { ViewState, SmartNote, Language, Theme, SocialLink } from './types';
 import { STATIC_NOTES, LibraryItem } from './notesData';
 import SmartNoteReader from './components/SmartNoteReader';
@@ -42,6 +43,18 @@ export const PHARMACY_SUBS = [
   "Pharmacognosy", "Pharmaceutical Chemistry", "Pharmaceutical Analysis", 
   "Physical Pharmacy", "Others Subjects"
 ];
+
+// Pharmacy Icon Mapping for Professional UI
+const PHARMACY_META: Record<string, string> = {
+  "Pharmacology": "💊",
+  "Pharmaceutics": "🏭",
+  "Pharmaceutical Jurisprudence": "⚖️",
+  "Pharmacognosy": "🌿",
+  "Pharmaceutical Chemistry": "🧪",
+  "Pharmaceutical Analysis": "🔬",
+  "Physical Pharmacy": "⚛️",
+  "Others Subjects": "📚"
+};
 
 // --- Translations Dictionary ---
 const translations = {
@@ -111,17 +124,21 @@ const translations = {
 
 // --- Error Boundary ---
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = { hasError: false };
+  // Fix for TS error: Property 'props' does not exist on type 'ErrorBoundary'
+  public props: ErrorBoundaryProps;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false };
+    this.props = props;
   }
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
@@ -287,8 +304,6 @@ function App() {
           updated[idx] = updatedNote;
           saveCustomNotes(updated);
       } else {
-          // If editing a static note, we essentially "fork" it into custom notes
-          // but since we use IDs, we just add it.
           saveCustomNotes([updatedNote, ...customNotes]); 
       }
   };
@@ -307,7 +322,7 @@ function App() {
   // --- Renderers ---
 
   const renderHeader = () => (
-    <header className={`sticky top-0 z-50 backdrop-blur-lg border-b transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200 shadow-sm'}`}>
+    <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${theme === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white/70 border-indigo-50/50 shadow-sm'}`}>
         <div className="max-w-7xl mx-auto px-4">
             {/* Top Row: Brand & Toggles */}
             <div className="flex items-center justify-between h-16">
@@ -323,14 +338,14 @@ function App() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button onClick={() => setLanguage(prev => prev === 'en' ? 'hi' : 'en')} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${theme === 'dark' ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                    <button onClick={() => setLanguage(prev => prev === 'en' ? 'hi' : 'en')} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${theme === 'dark' ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-indigo-100 text-indigo-600 hover:bg-indigo-50 bg-white/50'}`}>
                         {language === 'en' ? '🇮🇳 HI' : '🇺🇸 EN'}
                     </button>
-                    <button onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-slate-800 text-yellow-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                    <button onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} className={`p-2 rounded-full transition-all shadow-sm ${theme === 'dark' ? 'bg-slate-800 text-yellow-400' : 'bg-white text-indigo-600 hover:bg-indigo-50'}`}>
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
                     {/* XP / Gamification Badge */}
-                    <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-cyan-400' : 'bg-white border-slate-200 text-indigo-600'}`}>
+                    <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-cyan-400' : 'bg-white/80 border-indigo-100 text-indigo-600'}`}>
                         <span>🏆 Scholar Lvl. 1</span>
                     </div>
                 </div>
@@ -359,8 +374,8 @@ function App() {
                         }}
                         className={`shrink-0 flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
                             view === item.id 
-                            ? 'bg-slate-900 text-white shadow-md' 
-                            : (theme === 'dark' ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100')
+                            ? 'bg-slate-900 text-white shadow-md scale-105' 
+                            : (theme === 'dark' ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-white/80 hover:shadow-sm')
                         }`}
                     >
                         {item.label}
@@ -372,17 +387,17 @@ function App() {
   );
 
   const renderFooter = () => (
-      <footer id="contact-section" className={`py-12 px-4 border-t ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+      <footer id="contact-section" className={`py-12 px-4 border-t ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-gradient-to-b from-white to-indigo-50 border-indigo-50 text-slate-600'}`}>
           <div className="max-w-5xl mx-auto grid md:grid-cols-4 gap-8">
               <div className="col-span-1 md:col-span-2">
                   <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-tl-xl rounded-br-xl flex items-center justify-center text-white font-brand font-bold">V</div>
+                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-tl-xl rounded-br-xl flex items-center justify-center text-white font-brand font-bold shadow-lg">V</div>
                       <span className={`text-lg font-brand font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Vidyunmesā EduWorld</span>
                   </div>
                   <p className="text-sm leading-relaxed mb-6 opacity-80 max-w-sm">{txt.intro}</p>
                   <div className="flex gap-3">
                       {socialLinks.map(link => (
-                          <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'bg-slate-900 hover:bg-slate-800 text-white' : 'bg-white hover:bg-slate-200 text-indigo-600 shadow-sm'}`}>
+                          <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className={`p-2 rounded-xl transition-all hover:-translate-y-1 ${theme === 'dark' ? 'bg-slate-900 hover:bg-slate-800 text-white' : 'bg-white hover:shadow-md text-indigo-600 shadow-sm border border-indigo-50'}`}>
                               {link.platform === 'Telegram' && <Icons.Telegram />}
                               {link.platform === 'YouTube' && <Icons.YouTube />}
                               {link.platform === 'Instagram' && <Icons.Instagram />}
@@ -394,9 +409,9 @@ function App() {
               <div>
                   <h4 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txt.platform}</h4>
                   <ul className="space-y-2 text-sm">
-                      <li><button onClick={() => setView('subjects')} className="hover:underline">{txt.subjects}</button></li>
-                      <li><button onClick={() => setView('ai-tools')} className="hover:underline">{txt.aiTools}</button></li>
-                      <li><button onClick={() => setView('roadmap')} className="hover:underline">{txt.roadmap}</button></li>
+                      <li><button onClick={() => setView('subjects')} className="hover:text-indigo-600 transition-colors">{txt.subjects}</button></li>
+                      <li><button onClick={() => setView('ai-tools')} className="hover:text-indigo-600 transition-colors">{txt.aiTools}</button></li>
+                      <li><button onClick={() => setView('roadmap')} className="hover:text-indigo-600 transition-colors">{txt.roadmap}</button></li>
                       <li>
                           <button onClick={() => {
                               if(isAdminSession) setView('admin');
@@ -415,7 +430,7 @@ function App() {
                   </ul>
               </div>
           </div>
-          <div className="text-center text-xs mt-12 pt-8 border-t border-slate-200/10 opacity-50">
+          <div className="text-center text-xs mt-12 pt-8 border-t border-slate-200/50 opacity-50">
               {txt.copyright}
           </div>
       </footer>
@@ -426,38 +441,40 @@ function App() {
   const renderHome = () => (
       <main className="animate-fade-in">
           {/* Hero */}
-          <section className="relative pt-12 pb-20 px-4 text-center overflow-hidden">
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
-              <div className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold mb-6 border shadow-sm ${theme === 'dark' ? 'bg-indigo-900/30 text-indigo-300 border-indigo-800' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+          <section className="relative pt-16 pb-24 px-4 text-center overflow-hidden">
+              {/* --- UPDATED: Local decorative elements only, global background is now in App Root --- */}
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none"></div>
+              
+              <div className={`relative inline-block px-4 py-1.5 rounded-full text-xs font-bold mb-6 border shadow-sm backdrop-blur-sm ${theme === 'dark' ? 'bg-indigo-900/30 text-indigo-300 border-indigo-800' : 'bg-white/60 text-indigo-600 border-indigo-100'}`}>
                   🚀 {txt.tagline}
               </div>
-              <h2 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
-                  <span className={`text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600`}>Study Smart, Practice Better</span>
+              <h2 className="relative text-5xl md:text-7xl font-bold mb-6 tracking-tight drop-shadow-sm">
+                  <span className={`text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600`}>Study Smart, Practice Better</span>
                   <br />
-                  <span className="font-brand text-3xl md:text-5xl text-slate-400 mt-2 block">{txt.withBrand}</span>
+                  <span className="font-brand text-3xl md:text-5xl text-slate-400 mt-4 block">{txt.withBrand}</span>
               </h2>
-              <p className={`text-lg md:text-xl max-w-2xl mx-auto mb-8 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+              <p className={`text-lg md:text-xl max-w-2xl mx-auto mb-10 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                   {txt.intro}
               </p>
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-4 relative z-10">
                   <button 
                       onClick={() => setView('subjects')}
-                      className="px-8 py-4 rounded-full bg-slate-900 text-white font-bold text-lg shadow-xl hover:scale-105 transition-transform hover:shadow-2xl"
+                      className="px-10 py-4 rounded-full bg-slate-900 text-white font-bold text-lg shadow-2xl hover:scale-105 transition-transform hover:shadow-indigo-500/20 ring-4 ring-slate-900/5"
                   >
                       {txt.startLearning}
                   </button>
                   <button 
                       onClick={() => setView('ai-tools')}
-                      className="px-6 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold text-sm shadow-md hover:opacity-90 transition-opacity flex items-center gap-2"
+                      className="group px-6 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-indigo-600 font-bold text-sm shadow-lg hover:bg-white transition-all flex items-center gap-2"
                   >
-                      <span>🧠 {txt.tryAI}</span>
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 group-hover:opacity-80">🧠 {txt.tryAI}</span>
                   </button>
               </div>
           </section>
 
           {/* Features Grid */}
-          <section className="max-w-5xl mx-auto px-4 py-12">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <section className="max-w-6xl mx-auto px-4 py-12 relative z-10">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
                       { id: 'subjects', label: txt.curatedSubjects, icon: Icons.Book, color: 'bg-blue-50 text-blue-600', grad: 'from-blue-500 to-indigo-500' },
                       { id: 'ai-tools', label: txt.aiQuizMaker, icon: Icons.Brain, color: 'bg-purple-50 text-purple-600', grad: 'from-purple-500 to-pink-500' },
@@ -467,13 +484,14 @@ function App() {
                       <div 
                           key={i} 
                           onClick={() => setView(item.id as ViewState)}
-                          className={`group cursor-pointer relative p-6 rounded-3xl border transition-all hover:-translate-y-1 hover:shadow-xl overflow-hidden ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm'}`}
+                          className={`group cursor-pointer relative p-8 rounded-[2rem] border transition-all hover:-translate-y-2 hover:shadow-2xl overflow-hidden ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 backdrop-blur-md' : 'bg-white/70 border-white shadow-xl shadow-indigo-100/20 backdrop-blur-md hover:border-indigo-100'}`}
                       >
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-colors ${item.color}`}>
+                          <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full bg-gradient-to-br ${item.grad} opacity-10 group-hover:opacity-20 transition-opacity blur-xl`}></div>
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors shadow-sm ${item.color}`}>
                               <item.icon />
                           </div>
-                          <h3 className={`font-bold text-lg mb-1 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{item.label}</h3>
-                          <div className={`h-1 w-12 rounded-full bg-gradient-to-r ${item.grad}`}></div>
+                          <h3 className={`font-bold text-xl mb-1 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{item.label}</h3>
+                          <div className={`h-1.5 w-12 rounded-full bg-gradient-to-r ${item.grad} mt-4 group-hover:w-20 transition-all`}></div>
                       </div>
                   ))}
               </div>
@@ -485,7 +503,7 @@ function App() {
       if (selectedSubject === "Pharmacy Exams" && !selectedPharmacySub) {
           // Pharmacy Hub View
           return (
-              <div className="max-w-6xl mx-auto p-4 animate-fade-in min-h-screen">
+              <div className="max-w-6xl mx-auto p-4 animate-fade-in min-h-screen relative z-10">
                   <button onClick={() => setSelectedSubject(null)} className="mb-6 flex items-center gap-2 text-indigo-600 font-bold hover:underline">
                       ← {txt.back}
                   </button>
@@ -496,14 +514,20 @@ function App() {
                       <p className="text-slate-500">{txt.selectCategory}</p>
                   </div>
 
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid md:grid-cols-3 gap-6">
                       {PHARMACY_SUBS.map((sub) => (
                           <div 
                               key={sub} 
                               onClick={() => setSelectedPharmacySub(sub)}
-                              className={`p-6 rounded-2xl border cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-100 text-slate-700'}`}
+                              className={`group p-8 rounded-[2rem] border cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 overflow-hidden relative ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700 text-slate-200' : 'bg-white/80 border-indigo-50 text-slate-700 backdrop-blur-sm shadow-sm hover:border-indigo-200'}`}
                           >
-                              <h3 className="font-bold text-lg">{sub}</h3>
+                              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-500 to-pink-500 opacity-5 rounded-bl-full group-hover:scale-150 transition-transform duration-500"></div>
+                              <div className="flex flex-col gap-4">
+                                  <span className="text-4xl">{PHARMACY_META[sub] || '💊'}</span>
+                                  <h3 className={`font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 ${theme === 'dark' ? 'from-indigo-400 to-pink-400' : ''}`}>
+                                      {sub}
+                                  </h3>
+                              </div>
                           </div>
                       ))}
                   </div>
@@ -514,7 +538,7 @@ function App() {
       if (!selectedSubject) {
           // Main Categories View
           return (
-              <div className="max-w-6xl mx-auto p-4 animate-fade-in min-h-screen">
+              <div className="max-w-6xl mx-auto p-4 animate-fade-in min-h-screen relative z-10">
                   <h2 className={`text-3xl font-bold mb-8 text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txt.curatedSubjects}</h2>
                   
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
@@ -522,7 +546,7 @@ function App() {
                           <div 
                               key={name}
                               onClick={() => setSelectedSubject(name)}
-                              className={`p-6 rounded-3xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg flex flex-col items-center text-center gap-3 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
+                              className={`p-6 rounded-3xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg flex flex-col items-center text-center gap-3 ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700 hover:border-slate-600' : 'bg-white/80 border-slate-100 hover:border-indigo-100 backdrop-blur-sm'}`}
                           >
                               <span className="text-4xl mb-2">{meta.icon}</span>
                               <h3 className={`font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>{name}</h3>
@@ -537,7 +561,7 @@ function App() {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder={txt.searchPlaceholder}
-                          className={`w-full pl-12 pr-4 py-4 rounded-full shadow-sm focus:ring-2 outline-none transition-all ${theme === 'dark' ? 'bg-slate-800 text-white focus:ring-indigo-500' : 'bg-white text-slate-900 border border-slate-200 focus:ring-indigo-200'}`}
+                          className={`w-full pl-12 pr-4 py-4 rounded-full shadow-sm focus:ring-2 outline-none transition-all ${theme === 'dark' ? 'bg-slate-800/80 text-white focus:ring-indigo-500' : 'bg-white/90 text-slate-900 border border-slate-200 focus:ring-indigo-200'}`}
                       />
                       <svg className="absolute left-4 top-4 text-slate-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
@@ -556,7 +580,7 @@ function App() {
                               return (
                                   <div 
                                       key={note.id} 
-                                      className={`group flex items-center justify-between p-5 rounded-2xl border transition-all hover:shadow-md ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'bg-white border-slate-100 hover:border-indigo-100'}`}
+                                      className={`group flex items-center justify-between p-5 rounded-2xl border transition-all hover:shadow-md ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700 hover:border-slate-600' : 'bg-white/80 border-slate-100 hover:border-indigo-100 backdrop-blur-sm'}`}
                                   >
                                       <div className="flex items-center gap-4">
                                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-50'}`}>
@@ -590,7 +614,7 @@ function App() {
 
       // Specific Subject View (Notes List)
       return (
-          <div className="max-w-5xl mx-auto p-4 animate-fade-in min-h-screen">
+          <div className="max-w-5xl mx-auto p-4 animate-fade-in min-h-screen relative z-10">
               <div className="flex items-center justify-between mb-8">
                   <button onClick={() => {
                       if(selectedPharmacySub) setSelectedPharmacySub(null);
@@ -605,7 +629,7 @@ function App() {
 
               <div className="space-y-4">
                   {filteredNotes.map(note => (
-                      <div key={note.id} className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                      <div key={note.id} className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-slate-100 backdrop-blur-sm'}`}>
                           <div className="flex justify-between items-start">
                               <div>
                                   <h3 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{(language === 'hi' && note.smartContentHindi?.title) || note.title}</h3>
@@ -635,11 +659,21 @@ function App() {
   };
 
   // --- Main Render ---
+  // Base background color (flat) to ensure dark/light mode base is set
   const bgClass = theme === 'dark' ? 'bg-slate-950 text-slate-200' : 'bg-[#f8f9fa] text-slate-900';
 
   return (
     <ErrorBoundary>
-      <div className={`min-h-screen font-sans ${bgClass} transition-colors duration-300`}>
+      <div className={`min-h-screen font-sans ${bgClass} transition-colors duration-300 relative overflow-hidden`}>
+        
+        {/* --- GLOBAL PREMIUM BACKGROUND --- */}
+        {/* Moved from Home View to Root Level for persistence across all pages */}
+        {theme === 'light' && (
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-200/30 blur-[120px] animate-float"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-200/30 blur-[120px] animate-float" style={{animationDelay: '2s'}}></div>
+            </div>
+        )}
         
         {/* ADMIN LOGIN MODAL */}
         {showAdminLogin && (
@@ -665,42 +699,47 @@ function App() {
 
         {/* ACTIVE NOTE READER OVERLAY */}
         {activeNote ? (
-            <SmartNoteReader 
-                note={activeNote} 
-                onBack={() => setActiveNote(null)} 
-                language={language} 
-                canPlayAudio={
-                    audioAccessLevel === 'public' || 
-                    (audioAccessLevel === 'admin' && isAdminSession)
-                }
-            />
+            <div className="relative z-10">
+                <SmartNoteReader 
+                    note={activeNote} 
+                    onBack={() => setActiveNote(null)} 
+                    language={language} 
+                    canPlayAudio={
+                        audioAccessLevel === 'public' || 
+                        (audioAccessLevel === 'admin' && isAdminSession)
+                    }
+                />
+            </div>
         ) : (
             <>
-                {renderHeader()}
-                
-                <div className="min-h-[calc(100vh-300px)]">
-                    {view === 'home' && renderHome()}
-                    {view === 'subjects' && renderSubjects()}
-                    {view === 'ai-tools' && <AIToolsPanel onBack={() => setView('home')} language={language} theme={theme} />}
-                    {view === 'roadmap' && <RoadmapPanel onBack={() => setView('home')} language={language} />}
-                    {view === 'admin' && isAdminSession && (
-                        <AdminPanel 
-                            notes={customNotes} 
-                            onAddNote={handleAddNote} 
-                            onDeleteNote={handleDeleteNote}
-                            onEditNote={handleEditNote}
-                            socialLinks={socialLinks}
-                            onUpdateSocialLinks={saveSocialLinks}
-                            onBack={() => { setView('home'); setIsAdminSession(false); }} // Auto-lock on exit
-                            language={language}
-                            theme={theme}
-                            audioAccessLevel={audioAccessLevel}
-                            onUpdateAudioAccessLevel={updateAudioLevel}
-                        />
-                    )}
-                </div>
+                {/* Main Content Wrapper with z-10 to sit above background */}
+                <div className="relative z-10 flex flex-col min-h-screen">
+                    {renderHeader()}
+                    
+                    <div className="flex-1">
+                        {view === 'home' && renderHome()}
+                        {view === 'subjects' && renderSubjects()}
+                        {view === 'ai-tools' && <AIToolsPanel onBack={() => setView('home')} language={language} theme={theme} />}
+                        {view === 'roadmap' && <RoadmapPanel onBack={() => setView('home')} language={language} />}
+                        {view === 'admin' && isAdminSession && (
+                            <AdminPanel 
+                                notes={customNotes} 
+                                onAddNote={handleAddNote} 
+                                onDeleteNote={handleDeleteNote}
+                                onEditNote={handleEditNote}
+                                socialLinks={socialLinks}
+                                onUpdateSocialLinks={saveSocialLinks}
+                                onBack={() => { setView('home'); setIsAdminSession(false); }} // Auto-lock on exit
+                                language={language}
+                                theme={theme}
+                                audioAccessLevel={audioAccessLevel}
+                                onUpdateAudioAccessLevel={updateAudioLevel}
+                            />
+                        )}
+                    </div>
 
-                {view !== 'ai-tools' && view !== 'admin' && renderFooter()}
+                    {view !== 'ai-tools' && view !== 'admin' && renderFooter()}
+                </div>
                 
                 {/* GLOBAL FOCUS TIMER WIDGET */}
                 <div className="fixed bottom-6 right-6 z-40 hidden md:block">
