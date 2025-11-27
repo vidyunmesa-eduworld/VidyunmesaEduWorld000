@@ -591,20 +591,32 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
                         border: 1px solid #eee !important;
                     }
 
-                    /* Watermark Logic: FIXED OVERLAY MODE */
+                    /* Watermark Logic: CLEAN GRID OVERLAY MODE */
                     .print-watermark {
-                        display: flex !important;
+                        display: grid !important;
+                        grid-template-columns: repeat(2, 1fr) !important;
+                        grid-template-rows: repeat(4, 1fr) !important;
                         visibility: visible !important;
                         position: fixed !important; /* Fixed ensures repeat on every page */
-                        top: 0; left: 0; right: 0; bottom: 0;
+                        inset: 0 !important;
                         width: 100vw !important;
                         height: 100vh !important;
                         z-index: 2147483647 !important; /* Topmost layer */
-                        opacity: 0.15 !important; /* Slightly clearer opacity */
+                        opacity: 0.08 !important; /* Very subtle opacity */
                         pointer-events: none !important;
                         background: transparent !important;
                         align-items: center;
-                        justify-content: center;
+                        justify-items: center;
+                    }
+                    
+                    .print-watermark-item {
+                        transform: rotate(-45deg);
+                        font-size: 24px;
+                        font-weight: 900;
+                        color: #000;
+                        text-transform: uppercase;
+                        letter-spacing: 4px;
+                        white-space: nowrap;
                     }
                 }
             `;
@@ -719,15 +731,13 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
           {/* PRINT PORTAL WRAPPER: This ID is crucial for the CSS fix */}
           <div id="printable-content" className="max-w-3xl mx-auto p-4 md:p-8 space-y-12 relative z-10">
               
-              {/* WATERMARK (Visible in Print) - FIXED OVERLAY */}
+              {/* WATERMARK (Visible in Print) - CLEAN GRID OVERLAY */}
               <div className="print-watermark" aria-hidden="true">
-                   <div className="w-full h-full flex flex-col items-center justify-center rotate-[-30deg] scale-125">
-                      {Array.from({ length: 20 }).map((_, i) => (
-                          <div key={i} className="text-4xl font-black text-slate-900 whitespace-nowrap my-8 uppercase tracking-widest select-none opacity-20">
-                              Vidyunmesā EduWorld &nbsp; • &nbsp; Vidyunmesā EduWorld &nbsp; • &nbsp; Vidyunmesā EduWorld
-                          </div>
-                      ))}
-                   </div>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="print-watermark-item">
+                          Vidyunmesā EduWorld
+                      </div>
+                  ))}
               </div>
 
               {blocks.length === 0 ? (
