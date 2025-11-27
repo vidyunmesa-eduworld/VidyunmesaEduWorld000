@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { LibraryItem } from '../notesData';
 import { generateSmartNote, convertRawTextToSmartNote, translateSmartNote, getQuotaUsage } from '../services/geminiService';
@@ -30,7 +29,7 @@ const t = {
     activeNotes: "Active Notes",
     exit: "Exit",
     tabStudio: "✨ AI Studio",
-    tabManager: "📚 Library",
+    tabManager: "📚 Library Manager",
     tabSettings: "⚙️ Settings",
     modeAI: "Topic Mode (AI)",
     modeConvert: "Text Mode (AI)",
@@ -63,7 +62,7 @@ const t = {
     activeNotes: "कुल नोट्स",
     exit: "बाहर जाएं",
     tabStudio: "✨ AI स्टूडियो",
-    tabManager: "📚 लाइब्रेरी",
+    tabManager: "📚 लाइब्रेरी मैनेजर",
     tabSettings: "⚙️ सेटिंग्स",
     modeAI: "टॉपिक मोड (AI)",
     modeConvert: "टेक्स्ट मोड (AI)",
@@ -348,6 +347,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                          </div>
                      )}
                      
+                     {/* GLOBAL SUBJECT SELECTOR (Available for AI & Manual) */}
                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2">
                         <label className="block text-xs font-bold text-slate-500 mb-1">Select Main Subject</label>
                         <select 
@@ -393,13 +393,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
                      {/* --- MANUAL MODE INPUTS --- */}
                      {mode === 'manual' && (
-                         <div className="space-y-3">
+                         <div className="space-y-3 animate-fade-in">
                              <div>
                                  <label className="text-xs font-bold text-slate-500 ml-1">Title</label>
                                  <input value={manualTitle} onChange={e => setManualTitle(e.target.value)} placeholder={txt.phLinkTitle} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                              </div>
                              <div>
-                                 <label className="text-xs font-bold text-slate-500 ml-1">Link URL</label>
+                                 <label className="text-xs font-bold text-slate-500 ml-1">Link URL (Telegram/Drive/Archive)</label>
                                  <input value={manualLink} onChange={e => setManualLink(e.target.value)} placeholder={txt.phLinkUrl} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" />
                              </div>
                          </div>
@@ -407,13 +407,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
                      {/* --- AI MODE INPUTS --- */}
                      {mode === 'ai' && (
-                         <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={txt.phTopic} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                         <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={txt.phTopic} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none animate-fade-in" />
                      )}
                      {mode === 'convert' && (
-                         <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder={txt.phText} className="w-full p-3 border rounded-xl h-40 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                         <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder={txt.phText} className="w-full p-3 border rounded-xl h-40 focus:ring-2 focus:ring-indigo-500 outline-none animate-fade-in" />
                      )}
 
-                     {/* YouTube Link Input */}
+                     {/* YouTube Link Input - Visible in ALL modes */}
                      <div className="relative mt-4">
                         <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block">YouTube Video Lecture Link (Optional)</label>
                         <div className="relative">
@@ -550,7 +550,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <span className="bg-slate-100 px-2 py-0.5 rounded border">{note.subject}</span>
                                     <span className="text-slate-400">ID: {note.id}</span>
                                     {note.smartContentHindi && <span className="text-green-600 font-bold text-[10px] border border-green-200 px-1 rounded bg-green-50">HI Available</span>}
-                                    {note.pdfUrl && <span className="text-blue-600 font-bold text-[10px] border border-blue-200 px-1 rounded bg-blue-50">🔗 Link</span>}
+                                    {/* MANUAL LINK BADGE */}
+                                    {note.pdfUrl && <span className="text-blue-600 font-bold text-[10px] border border-blue-200 px-1 rounded bg-blue-50">🔗 Manual Link</span>}
                                 </div>
                             </div>
                             <div className="flex gap-2">
