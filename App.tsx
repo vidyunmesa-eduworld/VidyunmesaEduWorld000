@@ -10,7 +10,7 @@ import RoadmapPanel from './components/RoadmapPanel';
 // --- Modern Icons (Optimized for Edu-UI) ---
 const Icons = {
   Book: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
-  Brain: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
+  Brain: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
   Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
   Telegram: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-18.6 7.4a2.24 2.24 0 0 0-.1 4.12l4.5 1.78 10.5-6.7-8.3 7.6 3.8 7.6c.4.8 1.6.9 2.1.2l4.2-4 6-2.4a2.24 2.24 0 0 0 1.4-2.1V3.733c0-.5-.2-1-.6-1.3z"/></svg>,
   YouTube: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>,
@@ -19,7 +19,8 @@ const Icons = {
   Bot: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>,
   Globe: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
   Pill: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>,
-  Pen: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+  Pen: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>,
+  Shield: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 };
 
 // --- Constants ---
@@ -335,6 +336,10 @@ function App() {
       }
   };
 
+  const handlePremiumAlert = () => {
+      alert("🔒 This is a premium feature. Contact Admin to unlock.");
+  };
+
   // --- Renderers ---
 
   const renderHeader = () => (
@@ -354,15 +359,24 @@ function App() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* Admin Access Button (Shield) */}
+                    <button 
+                        onClick={() => {
+                            if(isAdminSession) setView('admin');
+                            else setShowAdminLogin(true);
+                        }}
+                        className={`p-2 rounded-full transition-all ${theme === 'dark' ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white text-slate-600 hover:bg-indigo-50 border border-indigo-100'}`}
+                        title={txt.adminLogin}
+                    >
+                        <Icons.Shield />
+                    </button>
+
                     <button onClick={() => setLanguage(prev => prev === 'en' ? 'hi' : 'en')} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${theme === 'dark' ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-indigo-100 text-indigo-600 hover:bg-indigo-50 bg-white/50'}`}>
                         {language === 'en' ? '🇮🇳 HI' : '🇺🇸 EN'}
                     </button>
                     <button onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} className={`p-2 rounded-full transition-all shadow-sm ${theme === 'dark' ? 'bg-slate-800 text-yellow-400' : 'bg-white text-indigo-600 hover:bg-indigo-50'}`}>
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
-                    <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-cyan-400' : 'bg-white/80 border-indigo-100 text-indigo-600'}`}>
-                        <span>🏆 Scholar Lvl. 1</span>
-                    </div>
                 </div>
             </div>
 
@@ -371,13 +385,17 @@ function App() {
                 {[
                     { id: 'home', label: txt.home, icon: Icons.Book },
                     { id: 'subjects', label: txt.subjects, icon: Icons.Brain },
-                    { id: 'ai-tools', label: txt.aiTools, icon: Icons.Bot, hidden: !aiEnabled },
+                    { id: 'ai-tools', label: aiEnabled ? txt.aiTools : `🔒 ${txt.aiTools}`, icon: Icons.Bot, isAi: true },
                     { id: 'roadmap', label: txt.roadmap, icon: Icons.Map },
                     { id: 'contact', label: txt.contact, icon: Icons.Telegram } 
-                ].filter(item => !item.hidden).map(item => (
+                ].map(item => (
                     <button 
                         key={item.id}
                         onClick={() => {
+                            if (item.isAi && !aiEnabled) {
+                                handlePremiumAlert();
+                                return;
+                            }
                             if (item.id === 'contact') {
                                 const footer = document.getElementById('contact-section');
                                 if (footer) footer.scrollIntoView({ behavior: 'smooth' });
@@ -425,7 +443,14 @@ function App() {
                   <h4 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txt.platform}</h4>
                   <ul className="space-y-2 text-sm">
                       <li><button onClick={() => setView('subjects')} className="hover:text-indigo-600 transition-colors">{txt.subjects}</button></li>
-                      {aiEnabled && <li><button onClick={() => setView('ai-tools')} className="hover:text-indigo-600 transition-colors">{txt.aiTools}</button></li>}
+                      <li>
+                          <button 
+                              onClick={() => aiEnabled ? setView('ai-tools') : handlePremiumAlert()}
+                              className="hover:text-indigo-600 transition-colors"
+                          >
+                              {aiEnabled ? txt.aiTools : `🔒 ${txt.aiTools}`}
+                          </button>
+                      </li>
                       <li><button onClick={() => setView('roadmap')} className="hover:text-indigo-600 transition-colors">{txt.roadmap}</button></li>
                       <li>
                           <button onClick={() => {
@@ -477,14 +502,14 @@ function App() {
                   >
                       {txt.startLearning}
                   </button>
-                  {aiEnabled && (
-                      <button 
-                          onClick={() => setView('ai-tools')}
-                          className="group px-6 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-indigo-600 font-bold text-sm shadow-lg hover:bg-white transition-all flex items-center gap-2"
-                      >
-                          <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 group-hover:opacity-80">🧠 {txt.tryAI}</span>
-                      </button>
-                  )}
+                  <button 
+                      onClick={() => aiEnabled ? setView('ai-tools') : handlePremiumAlert()}
+                      className="group px-6 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-indigo-600 font-bold text-sm shadow-lg hover:bg-white transition-all flex items-center gap-2"
+                  >
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 group-hover:opacity-80">
+                          {aiEnabled ? `🧠 ${txt.tryAI}` : `🔒 ${txt.tryAI} (Premium)`}
+                      </span>
+                  </button>
               </div>
           </section>
 
@@ -493,13 +518,16 @@ function App() {
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
                       { id: 'subjects', label: txt.curatedSubjects, icon: Icons.Book, color: 'bg-blue-50 text-blue-600', grad: 'from-blue-500 to-indigo-500' },
-                      { id: 'ai-tools', label: txt.aiQuizMaker, icon: Icons.Brain, color: 'bg-purple-50 text-purple-600', grad: 'from-purple-500 to-pink-500', hidden: !aiEnabled },
-                      { id: 'ai-tools', label: txt.examSathi, icon: Icons.Bot, color: 'bg-amber-50 text-amber-600', grad: 'from-amber-500 to-orange-500', hidden: !aiEnabled },
+                      { id: 'ai-tools', label: aiEnabled ? txt.aiQuizMaker : `🔒 ${txt.aiQuizMaker}`, icon: Icons.Brain, color: 'bg-purple-50 text-purple-600', grad: 'from-purple-500 to-pink-500', isAi: true },
+                      { id: 'ai-tools', label: aiEnabled ? txt.examSathi : `🔒 ${txt.examSathi}`, icon: Icons.Bot, color: 'bg-amber-50 text-amber-600', grad: 'from-amber-500 to-orange-500', isAi: true },
                       { id: 'roadmap', label: txt.examRoadmap, icon: Icons.Map, color: 'bg-emerald-50 text-emerald-600', grad: 'from-emerald-500 to-teal-500' }
-                  ].filter(i => !i.hidden).map((item, i) => (
+                  ].map((item, i) => (
                       <div 
                           key={i} 
-                          onClick={() => setView(item.id as ViewState)}
+                          onClick={() => {
+                              if (item.isAi && !aiEnabled) handlePremiumAlert();
+                              else setView(item.id as ViewState);
+                          }}
                           className={`group cursor-pointer relative p-8 rounded-[2rem] border transition-all hover:-translate-y-2 hover:shadow-2xl overflow-hidden ${theme === 'dark' ? 'bg-slate-800/50 border-slate-700 backdrop-blur-md' : 'bg-white/70 border-white shadow-xl shadow-indigo-100/20 backdrop-blur-md hover:border-indigo-100'}`}
                       >
                           <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full bg-gradient-to-br ${item.grad} opacity-10 group-hover:opacity-20 transition-opacity blur-xl`}></div>
@@ -743,16 +771,6 @@ function App() {
                     </div>
 
                     {view !== 'ai-tools' && view !== 'admin' && renderFooter()}
-                </div>
-                
-                <div className="fixed bottom-6 right-6 z-40 hidden md:block">
-                    <div className={`p-4 rounded-2xl shadow-2xl border backdrop-blur-md transition-all hover:scale-105 ${theme === 'dark' ? 'bg-slate-900/80 border-slate-700' : 'bg-white/80 border-white'}`}>
-                        <div className="flex items-center gap-3">
-                            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
-                            <span className={`font-mono font-bold text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>25:00</span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1 text-center">Focus Mode</div>
-                    </div>
                 </div>
             </>
         )}
