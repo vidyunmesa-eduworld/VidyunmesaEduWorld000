@@ -133,7 +133,6 @@ interface ErrorBoundaryState {
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public state: ErrorBoundaryState = { hasError: false };
-  // Fix for TS error: Property 'props' does not exist on type 'ErrorBoundary'
   public props: ErrorBoundaryProps;
 
   constructor(props: ErrorBoundaryProps) {
@@ -185,6 +184,10 @@ function App() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPassInput, setAdminPassInput] = useState("");
 
+  // --- AI Control & Site Config State ---
+  const [aiEnabled, setAiEnabled] = useState(false); // Default OFF/Locked
+  const [siteIntroText, setSiteIntroText] = useState(""); // Dynamic About Text
+
   // --- Audio & Social State ---
   const [audioAccessLevel, setAudioAccessLevel] = useState<'locked' | 'admin' | 'public'>('locked');
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([
@@ -211,6 +214,12 @@ function App() {
 
         const savedAudio = localStorage.getItem('vidyunmesa_audio_level');
         if (savedAudio) setAudioAccessLevel(savedAudio as any);
+
+        const savedAi = localStorage.getItem('vidyunmesa_ai_enabled');
+        if (savedAi !== null) setAiEnabled(JSON.parse(savedAi));
+
+        const savedIntro = localStorage.getItem('vidyunmesa_intro_text');
+        if (savedIntro) setSiteIntroText(savedIntro);
         
         // Clean up legacy garbage if any
         const legacyKey = 'cinematic_presentations'; 
@@ -237,10 +246,19 @@ function App() {
       localStorage.setItem('vidyunmesa_audio_level', level);
   }
 
+  const updateAiEnabled = (enabled: boolean) => {
+      setAiEnabled(enabled);
+      localStorage.setItem('vidyunmesa_ai_enabled', JSON.stringify(enabled));
+  }
+
+  const updateSiteIntro = (text: string) => {
+      setSiteIntroText(text);
+      localStorage.setItem('vidyunmesa_intro_text', text);
+  }
+
   // --- Master Data Merge ---
   const allNotes = useMemo(() => {
       const combined = [...customNotes, ...STATIC_NOTES];
-      // Filter out deleted IDs (Tombstone logic)
       return combined.filter(n => !deletedIds.includes(n.id.toString()));
   }, [customNotes, deletedIds]);
 
@@ -273,7 +291,6 @@ function App() {
       }
 
       // 3. Privacy Filter (Master Override)
-      // If note is private, only show if Admin
       if (!isAdminSession) {
           filtered = filtered.filter(n => !n.isPrivate);
       }
@@ -288,7 +305,6 @@ function App() {
       setDeletedIds(newDeleted);
       localStorage.setItem('vidyunmesa_deleted_ids', JSON.stringify(newDeleted));
       
-      // Also remove from custom state if exists there
       const remainingCustom = customNotes.filter(n => n.id !== id);
       saveCustomNotes(remainingCustom);
   };
@@ -344,22 +360,21 @@ function App() {
                     <button onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} className={`p-2 rounded-full transition-all shadow-sm ${theme === 'dark' ? 'bg-slate-800 text-yellow-400' : 'bg-white text-indigo-600 hover:bg-indigo-50'}`}>
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
-                    {/* XP / Gamification Badge */}
                     <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-cyan-400' : 'bg-white/80 border-indigo-100 text-indigo-600'}`}>
                         <span>🏆 Scholar Lvl. 1</span>
                     </div>
                 </div>
             </div>
 
-            {/* Bottom Row: Navigation (Mobile Scrollable) */}
+            {/* Bottom Row: Navigation */}
             <nav className="flex items-center gap-1 overflow-x-auto pb-2 no-scrollbar md:pb-0 md:h-12 -mt-1">
                 {[
                     { id: 'home', label: txt.home, icon: Icons.Book },
                     { id: 'subjects', label: txt.subjects, icon: Icons.Brain },
-                    { id: 'ai-tools', label: txt.aiTools, icon: Icons.Bot },
+                    { id: 'ai-tools', label: txt.aiTools, icon: Icons.Bot, hidden: !aiEnabled },
                     { id: 'roadmap', label: txt.roadmap, icon: Icons.Map },
                     { id: 'contact', label: txt.contact, icon: Icons.Telegram } 
-                ].map(item => (
+                ].filter(item => !item.hidden).map(item => (
                     <button 
                         key={item.id}
                         onClick={() => {
@@ -394,7 +409,7 @@ function App() {
                       <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-tl-xl rounded-br-xl flex items-center justify-center text-white font-brand font-bold shadow-lg">V</div>
                       <span className={`text-lg font-brand font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Vidyunmesā EduWorld</span>
                   </div>
-                  <p className="text-sm leading-relaxed mb-6 opacity-80 max-w-sm">{txt.intro}</p>
+                  <p className="text-sm leading-relaxed mb-6 opacity-80 max-w-sm">{siteIntroText || txt.intro}</p>
                   <div className="flex gap-3">
                       {socialLinks.map(link => (
                           <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className={`p-2 rounded-xl transition-all hover:-translate-y-1 ${theme === 'dark' ? 'bg-slate-900 hover:bg-slate-800 text-white' : 'bg-white hover:shadow-md text-indigo-600 shadow-sm border border-indigo-50'}`}>
@@ -410,7 +425,7 @@ function App() {
                   <h4 className={`font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txt.platform}</h4>
                   <ul className="space-y-2 text-sm">
                       <li><button onClick={() => setView('subjects')} className="hover:text-indigo-600 transition-colors">{txt.subjects}</button></li>
-                      <li><button onClick={() => setView('ai-tools')} className="hover:text-indigo-600 transition-colors">{txt.aiTools}</button></li>
+                      {aiEnabled && <li><button onClick={() => setView('ai-tools')} className="hover:text-indigo-600 transition-colors">{txt.aiTools}</button></li>}
                       <li><button onClick={() => setView('roadmap')} className="hover:text-indigo-600 transition-colors">{txt.roadmap}</button></li>
                       <li>
                           <button onClick={() => {
@@ -442,7 +457,6 @@ function App() {
       <main className="animate-fade-in">
           {/* Hero */}
           <section className="relative pt-16 pb-24 px-4 text-center overflow-hidden">
-              {/* --- UPDATED: Local decorative elements only, global background is now in App Root --- */}
               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none"></div>
               
               <div className={`relative inline-block px-4 py-1.5 rounded-full text-xs font-bold mb-6 border shadow-sm backdrop-blur-sm ${theme === 'dark' ? 'bg-indigo-900/30 text-indigo-300 border-indigo-800' : 'bg-white/60 text-indigo-600 border-indigo-100'}`}>
@@ -454,7 +468,7 @@ function App() {
                   <span className="font-brand text-3xl md:text-5xl text-slate-400 mt-4 block">{txt.withBrand}</span>
               </h2>
               <p className={`text-lg md:text-xl max-w-2xl mx-auto mb-10 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                  {txt.intro}
+                  {siteIntroText || txt.intro}
               </p>
               <div className="flex flex-col items-center gap-4 relative z-10">
                   <button 
@@ -463,12 +477,14 @@ function App() {
                   >
                       {txt.startLearning}
                   </button>
-                  <button 
-                      onClick={() => setView('ai-tools')}
-                      className="group px-6 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-indigo-600 font-bold text-sm shadow-lg hover:bg-white transition-all flex items-center gap-2"
-                  >
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 group-hover:opacity-80">🧠 {txt.tryAI}</span>
-                  </button>
+                  {aiEnabled && (
+                      <button 
+                          onClick={() => setView('ai-tools')}
+                          className="group px-6 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-indigo-600 font-bold text-sm shadow-lg hover:bg-white transition-all flex items-center gap-2"
+                      >
+                          <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 group-hover:opacity-80">🧠 {txt.tryAI}</span>
+                      </button>
+                  )}
               </div>
           </section>
 
@@ -477,10 +493,10 @@ function App() {
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[
                       { id: 'subjects', label: txt.curatedSubjects, icon: Icons.Book, color: 'bg-blue-50 text-blue-600', grad: 'from-blue-500 to-indigo-500' },
-                      { id: 'ai-tools', label: txt.aiQuizMaker, icon: Icons.Brain, color: 'bg-purple-50 text-purple-600', grad: 'from-purple-500 to-pink-500' },
-                      { id: 'ai-tools', label: txt.examSathi, icon: Icons.Bot, color: 'bg-amber-50 text-amber-600', grad: 'from-amber-500 to-orange-500' },
+                      { id: 'ai-tools', label: txt.aiQuizMaker, icon: Icons.Brain, color: 'bg-purple-50 text-purple-600', grad: 'from-purple-500 to-pink-500', hidden: !aiEnabled },
+                      { id: 'ai-tools', label: txt.examSathi, icon: Icons.Bot, color: 'bg-amber-50 text-amber-600', grad: 'from-amber-500 to-orange-500', hidden: !aiEnabled },
                       { id: 'roadmap', label: txt.examRoadmap, icon: Icons.Map, color: 'bg-emerald-50 text-emerald-600', grad: 'from-emerald-500 to-teal-500' }
-                  ].map((item, i) => (
+                  ].filter(i => !i.hidden).map((item, i) => (
                       <div 
                           key={i} 
                           onClick={() => setView(item.id as ViewState)}
@@ -500,20 +516,18 @@ function App() {
   );
 
   const renderSubjects = () => {
+      // (Keep existing subject render logic exactly the same, it works fine)
       if (selectedSubject === "Pharmacy Exams" && !selectedPharmacySub) {
-          // Pharmacy Hub View
           return (
               <div className="max-w-6xl mx-auto p-4 animate-fade-in min-h-screen relative z-10">
                   <button onClick={() => setSelectedSubject(null)} className="mb-6 flex items-center gap-2 text-indigo-600 font-bold hover:underline">
                       ← {txt.back}
                   </button>
-                  
                   <div className="text-center mb-10">
                       <span className="text-4xl mb-4 block">💊</span>
                       <h2 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txt.pharmacyHub}</h2>
                       <p className="text-slate-500">{txt.selectCategory}</p>
                   </div>
-
                   <div className="grid md:grid-cols-3 gap-6">
                       {PHARMACY_SUBS.map((sub) => (
                           <div 
@@ -536,11 +550,9 @@ function App() {
       }
 
       if (!selectedSubject) {
-          // Main Categories View
           return (
               <div className="max-w-6xl mx-auto p-4 animate-fade-in min-h-screen relative z-10">
                   <h2 className={`text-3xl font-bold mb-8 text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{txt.curatedSubjects}</h2>
-                  
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
                       {Object.entries(SUBJECT_CATEGORIES).map(([name, meta]) => (
                           <div 
@@ -553,8 +565,6 @@ function App() {
                           </div>
                       ))}
                   </div>
-
-                  {/* Global Search Bar */}
                   <div className="max-w-xl mx-auto mb-8 relative">
                       <input 
                           type="text"
@@ -565,8 +575,6 @@ function App() {
                       />
                       <svg className="absolute left-4 top-4 text-slate-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   </div>
-
-                  {/* Recent / All Notes List */}
                   <div className="space-y-4">
                       <h3 className={`font-bold text-lg px-2 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{searchQuery ? 'Search Results' : txt.recentUploads}</h3>
                       {filteredNotes.length === 0 ? (
@@ -575,7 +583,7 @@ function App() {
                           filteredNotes.map(note => {
                               const displayNote = language === 'hi' && note.smartContentHindi ? note.smartContentHindi : (note.smartContent || note);
                               const title = displayNote.title || note.title;
-                              const isAlternate = note.id % 2 === 0; // Simple alternation logic
+                              const isAlternate = note.id % 2 === 0;
 
                               return (
                                   <div 
@@ -594,6 +602,7 @@ function App() {
                                                   <span className="flex items-center gap-1">⏱️ {note.time}</span>
                                                   <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 border dark:border-slate-600">{note.subject}</span>
                                                   {note.isPrivate && <span className="text-red-500 font-bold">🔒 Private</span>}
+                                                  {note.pdfUrl && <span className="text-blue-500 font-bold border border-blue-200 px-1 rounded bg-blue-50">🔗 Link</span>}
                                               </div>
                                           </div>
                                       </div>
@@ -601,7 +610,7 @@ function App() {
                                           onClick={() => setActiveNote(note)}
                                           className={`px-5 py-2 rounded-xl font-bold text-sm transition-all ${theme === 'dark' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'}`}
                                       >
-                                          {txt.readNote}
+                                          {note.smartContent ? txt.readNote : "Open Resource"}
                                       </button>
                                   </div>
                               );
@@ -612,7 +621,6 @@ function App() {
           );
       }
 
-      // Specific Subject View (Notes List)
       return (
           <div className="max-w-5xl mx-auto p-4 animate-fade-in min-h-screen relative z-10">
               <div className="flex items-center justify-between mb-8">
@@ -626,7 +634,6 @@ function App() {
                       {selectedPharmacySub || selectedSubject} <span className="text-slate-400 text-lg font-normal">Library</span>
                   </h2>
               </div>
-
               <div className="space-y-4">
                   {filteredNotes.map(note => (
                       <div key={note.id} className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md ${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-slate-100 backdrop-blur-sm'}`}>
@@ -636,13 +643,14 @@ function App() {
                                   <div className="flex gap-2 text-sm text-slate-500">
                                       <span>⏱️ {note.time}</span>
                                       {note.youtubeUrl && <span className="text-red-500 font-bold">• 📺 Video Class</span>}
+                                      {note.pdfUrl && <span className="text-blue-500 font-bold">• 🔗 Resource</span>}
                                   </div>
                               </div>
                               <button 
                                   onClick={() => setActiveNote(note)}
                                   className="bg-slate-900 text-white px-6 py-2 rounded-full font-bold text-sm hover:scale-105 transition-transform shadow-lg"
                               >
-                                  Read Now
+                                  {note.smartContent ? "Read Now" : "Open Link"}
                               </button>
                           </div>
                       </div>
@@ -658,16 +666,11 @@ function App() {
       );
   };
 
-  // --- Main Render ---
-  // Base background color (flat) to ensure dark/light mode base is set
   const bgClass = theme === 'dark' ? 'bg-slate-950 text-slate-200' : 'bg-[#f8f9fa] text-slate-900';
 
   return (
     <ErrorBoundary>
       <div className={`min-h-screen font-sans ${bgClass} transition-colors duration-300 relative overflow-hidden`}>
-        
-        {/* --- GLOBAL PREMIUM BACKGROUND --- */}
-        {/* Moved from Home View to Root Level for persistence across all pages */}
         {theme === 'light' && (
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-200/30 blur-[120px] animate-float"></div>
@@ -675,7 +678,6 @@ function App() {
             </div>
         )}
         
-        {/* ADMIN LOGIN MODAL */}
         {showAdminLogin && (
             <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                 <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center animate-in fade-in zoom-in duration-300">
@@ -697,7 +699,6 @@ function App() {
             </div>
         )}
 
-        {/* ACTIVE NOTE READER OVERLAY */}
         {activeNote ? (
             <div className="relative z-10">
                 <SmartNoteReader 
@@ -705,14 +706,13 @@ function App() {
                     onBack={() => setActiveNote(null)} 
                     language={language} 
                     canPlayAudio={
-                        audioAccessLevel === 'public' || 
-                        (audioAccessLevel === 'admin' && isAdminSession)
+                        aiEnabled && (audioAccessLevel === 'public' || 
+                        (audioAccessLevel === 'admin' && isAdminSession))
                     }
                 />
             </div>
         ) : (
             <>
-                {/* Main Content Wrapper with z-10 to sit above background */}
                 <div className="relative z-10 flex flex-col min-h-screen">
                     {renderHeader()}
                     
@@ -729,11 +729,15 @@ function App() {
                                 onEditNote={handleEditNote}
                                 socialLinks={socialLinks}
                                 onUpdateSocialLinks={saveSocialLinks}
-                                onBack={() => { setView('home'); setIsAdminSession(false); }} // Auto-lock on exit
+                                onBack={() => { setView('home'); setIsAdminSession(false); }} 
                                 language={language}
                                 theme={theme}
                                 audioAccessLevel={audioAccessLevel}
                                 onUpdateAudioAccessLevel={updateAudioLevel}
+                                aiEnabled={aiEnabled}
+                                onUpdateAiEnabled={updateAiEnabled}
+                                siteIntroText={siteIntroText}
+                                onUpdateSiteIntro={updateSiteIntro}
                             />
                         )}
                     </div>
@@ -741,7 +745,6 @@ function App() {
                     {view !== 'ai-tools' && view !== 'admin' && renderFooter()}
                 </div>
                 
-                {/* GLOBAL FOCUS TIMER WIDGET */}
                 <div className="fixed bottom-6 right-6 z-40 hidden md:block">
                     <div className={`p-4 rounded-2xl shadow-2xl border backdrop-blur-md transition-all hover:scale-105 ${theme === 'dark' ? 'bg-slate-900/80 border-slate-700' : 'bg-white/80 border-white'}`}>
                         <div className="flex items-center gap-3">

@@ -17,6 +17,10 @@ interface AdminPanelProps {
   theme: Theme;
   audioAccessLevel: 'locked' | 'admin' | 'public';
   onUpdateAudioAccessLevel: (level: 'locked' | 'admin' | 'public') => void;
+  aiEnabled: boolean;
+  onUpdateAiEnabled: (enabled: boolean) => void;
+  siteIntroText: string;
+  onUpdateSiteIntro: (text: string) => void;
 }
 
 // --- Translations ---
@@ -28,11 +32,14 @@ const t = {
     tabStudio: "✨ AI Studio",
     tabManager: "📚 Library",
     tabSettings: "⚙️ Settings",
-    modeAI: "Topic Mode",
-    modeConvert: "Text Mode",
+    modeAI: "Topic Mode (AI)",
+    modeConvert: "Text Mode (AI)",
+    modeManual: "Manual Link",
     phSubject: "Select Subject",
     phTopic: "Topic (e.g. Cell Structure)",
     phText: "Paste text here to convert...",
+    phLinkTitle: "Enter Note Title",
+    phLinkUrl: "Paste Telegram / Drive / PDF Link here...",
     btnGenEn: "1. Generate English Note",
     btnGenHi: "2. Generate Hindi Version",
     btnSave: "3. Save to Database",
@@ -48,7 +55,8 @@ const t = {
     editMode: "Editing Mode",
     cancelEdit: "Cancel Edit",
     confirmDelete: "Are you sure you want to permanently delete this note? This cannot be undone.",
-    noNotes: "No notes found. Go to AI Studio to create one."
+    noNotes: "No notes found. Go to AI Studio to create one.",
+    manualSave: "Save Manual Note"
   },
   hi: {
     title: "एडमिन डैशबोर्ड",
@@ -57,11 +65,14 @@ const t = {
     tabStudio: "✨ AI स्टूडियो",
     tabManager: "📚 लाइब्रेरी",
     tabSettings: "⚙️ सेटिंग्स",
-    modeAI: "टॉपिक मोड",
-    modeConvert: "टेक्स्ट मोड",
+    modeAI: "टॉपिक मोड (AI)",
+    modeConvert: "टेक्स्ट मोड (AI)",
+    modeManual: "मैनुअल लिंक",
     phSubject: "विषय चुनें",
     phTopic: "टॉपिक (जैसे कोशिका)",
     phText: "टेक्स्ट पेस्ट करें...",
+    phLinkTitle: "नोट का शीर्षक लिखें",
+    phLinkUrl: "Telegram / Drive / PDF लिंक पेस्ट करें...",
     btnGenEn: "1. अंग्रेजी नोट बनाएं",
     btnGenHi: "2. हिंदी वर्जन बनाएं",
     btnSave: "3. डेटाबेस में सेव करें",
@@ -77,7 +88,8 @@ const t = {
     editMode: "संपादन मोड",
     cancelEdit: "रद्द करें",
     confirmDelete: "क्या आप वाकई इस नोट को हमेशा के लिए हटाना चाहते हैं? यह वापस नहीं आएगा।",
-    noNotes: "कोई नोट्स नहीं मिले। AI स्टूडियो में जाकर नया नोट बनाएं।"
+    noNotes: "कोई नोट्स नहीं मिले। AI स्टूडियो में जाकर नया नोट बनाएं।",
+    manualSave: "मैनुअल नोट सेव करें"
   }
 };
 
@@ -114,16 +126,21 @@ const SocialMediaManager: React.FC<{ links: SocialLink[], onUpdate: (l: SocialLi
     );
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote, onEditNote, socialLinks, onUpdateSocialLinks, onBack, language, audioAccessLevel, onUpdateAudioAccessLevel }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ 
+    notes, onAddNote, onDeleteNote, onEditNote, socialLinks, onUpdateSocialLinks, onBack, language, 
+    audioAccessLevel, onUpdateAudioAccessLevel, aiEnabled, onUpdateAiEnabled, siteIntroText, onUpdateSiteIntro 
+}) => {
   const [activeTab, setActiveTab] = useState('studio');
-  const [mode, setMode] = useState<'ai' | 'convert'>('ai');
+  const [mode, setMode] = useState<'ai' | 'convert' | 'manual'>('manual'); // Default to manual for safety
   const txt = t[language];
   
   // --- GENERATION STATE ---
-  const [subject, setSubject] = useState("Polity"); // Default subject
-  const [subSubject, setSubSubject] = useState(""); // For Pharmacy
+  const [subject, setSubject] = useState("Polity"); 
+  const [subSubject, setSubSubject] = useState(""); 
   const [topic, setTopic] = useState("");
   const [rawText, setRawText] = useState("");
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualLink, setManualLink] = useState("");
   const [isPrivate, setIsPrivate] = useState(false); 
   const [youtubeLink, setYoutubeLink] = useState(""); 
   
@@ -136,14 +153,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
   
   const [quota, setQuota] = useState({ count: 0, limit: 1400 });
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [tempIntro, setTempIntro] = useState(siteIntroText);
 
   const allSubjects = Object.keys(SUBJECT_CATEGORIES);
 
   useEffect(() => {
       if (activeTab === 'settings') {
           setQuota(getQuotaUsage());
+          setTempIntro(siteIntroText);
       }
-  }, [activeTab]);
+  }, [activeTab, siteIntroText]);
 
   useEffect(() => {
       let timer: any;
@@ -158,7 +177,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
   const startEditing = (note: LibraryItem) => {
       setEditingId(note.id);
       
-      // Logic to check if subject is a pharmacy sub-subject
       if (PHARMACY_SUBS.includes(note.subject)) {
           setSubject("Pharmacy Exams");
           setSubSubject(note.subject);
@@ -170,11 +188,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
       setTopic(note.title);
       setIsPrivate(note.isPrivate || false); 
       setYoutubeLink(note.youtubeUrl || ""); 
-      setEnglishNote(note.smartContent || null);
-      setHindiNote(note.smartContentHindi || null);
+      
+      if (note.smartContent) {
+          setMode('ai');
+          setEnglishNote(note.smartContent || null);
+          setHindiNote(note.smartContentHindi || null);
+          setStep(note.smartContentHindi ? 3 : 2);
+      } else {
+          setMode('manual');
+          setManualTitle(note.title);
+          setManualLink(note.pdfUrl || "");
+      }
+      
       setActiveTab('studio');
-      setMode('ai'); 
-      if (note.smartContent) setStep(note.smartContentHindi ? 3 : 2);
   };
 
   const cancelEditing = () => {
@@ -182,6 +208,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
       setSubject("Polity");
       setSubSubject("");
       setTopic("");
+      setManualTitle("");
+      setManualLink("");
       setIsPrivate(false);
       setYoutubeLink("");
       setEnglishNote(null);
@@ -207,7 +235,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
           else note = await convertRawTextToSmartNote(rawText);
 
           if (note) {
-              // Ensure subject is correctly set on the note object
               note.subject = finalSubject;
               setEnglishNote(note);
               setStep(1);
@@ -226,7 +253,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
           const hNote = await translateSmartNote(englishNote, 'hi');
           if (hNote) {
               hNote.id = `hi-${englishNote.id}`;
-              // Ensure subject matches english note
               hNote.subject = englishNote.subject;
               setHindiNote(hNote);
               setStep(3);
@@ -239,20 +265,34 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
   };
 
   const handleSave = async () => {
-      if (!englishNote) return;
-      
       const finalSubject = subject === "Pharmacy Exams" && subSubject ? subSubject : subject;
+      
+      let newItem: LibraryItem;
 
-      const newItem: LibraryItem = {
-          id: editingId || Date.now(), 
-          title: englishNote.title,
-          subject: finalSubject,
-          time: englishNote.readTime,
-          smartContent: { ...englishNote, subject: finalSubject }, // Ensure subject is consistent
-          smartContentHindi: hindiNote ? { ...hindiNote, subject: finalSubject } : undefined,
-          isPrivate: isPrivate, 
-          youtubeUrl: youtubeLink || undefined 
-      };
+      if (mode === 'manual') {
+          if (!manualTitle || !manualLink) return alert("Please enter Title and Link");
+          newItem = {
+              id: editingId || Date.now(),
+              title: manualTitle,
+              subject: finalSubject,
+              time: "External Link",
+              pdfUrl: manualLink,
+              isPrivate: isPrivate,
+              youtubeUrl: youtubeLink || undefined
+          };
+      } else {
+          if (!englishNote) return;
+          newItem = {
+              id: editingId || Date.now(), 
+              title: englishNote.title,
+              subject: finalSubject,
+              time: englishNote.readTime,
+              smartContent: { ...englishNote, subject: finalSubject },
+              smartContentHindi: hindiNote ? { ...hindiNote, subject: finalSubject } : undefined,
+              isPrivate: isPrivate, 
+              youtubeUrl: youtubeLink || undefined 
+          };
+      }
       
       if (editingId) {
           onEditNote(newItem);
@@ -260,9 +300,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
       } else {
           onAddNote(newItem);
           alert(`✅ Saved!\n\n${txt.saveWarn}`);
-          const allNotes = [newItem, ...notes];
-          const code = `// Updated: ${new Date().toLocaleString()}\nimport { SmartNote } from './types';\n\nexport interface LibraryItem {\n  id: number;\n  title: string;\n  subject: string;\n  time: string;\n  pdfUrl?: string;\n  youtubeUrl?: string;\n  smartContent?: SmartNote;\n  smartContentHindi?: SmartNote;\n  isPrivate?: boolean;\n}\n\nexport const STATIC_NOTES: LibraryItem[] = ${JSON.stringify(allNotes, null, 2)};`;
-          await navigator.clipboard.writeText(code);
       }
       cancelEditing();
   };
@@ -311,14 +348,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
                          </div>
                      )}
                      
-                     {/* --- UNIVERSAL SUBJECT SELECTION (APPLIES TO BOTH MODES) --- */}
                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 mb-2">
                         <label className="block text-xs font-bold text-slate-500 mb-1">Select Main Subject</label>
                         <select 
                             value={subject} 
                             onChange={e => {
                                 setSubject(e.target.value);
-                                setSubSubject(""); // Reset sub-subject on change
+                                setSubSubject("");
                             }} 
                             className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                         >
@@ -327,7 +363,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
                             ))}
                         </select>
 
-                        {/* SUB-SUBJECT SELECTOR (Pharmacy Only) */}
                         {subject === "Pharmacy Exams" && (
                             <div className="animate-fade-in mt-3">
                                 <label className="block text-xs font-bold text-blue-500 mb-1">Select Pharmacy Category</label>
@@ -345,43 +380,56 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
                         )}
                      </div>
 
+                     {/* Mode Switcher */}
                      <div className="flex bg-slate-100 p-1 rounded-lg mb-4 mt-2">
-                         <button onClick={() => setMode('ai')} className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${mode === 'ai' ? 'bg-white shadow' : 'text-slate-500'}`}>{txt.modeAI}</button>
-                         <button onClick={() => setMode('convert')} className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${mode === 'convert' ? 'bg-white shadow' : 'text-slate-500'}`}>{txt.modeConvert}</button>
+                         <button onClick={() => setMode('manual')} className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${mode === 'manual' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}>🔗 {txt.modeManual}</button>
+                         {aiEnabled && (
+                             <>
+                                <button onClick={() => setMode('ai')} className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${mode === 'ai' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}>{txt.modeAI}</button>
+                                <button onClick={() => setMode('convert')} className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${mode === 'convert' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}>{txt.modeConvert}</button>
+                             </>
+                         )}
                      </div>
 
-                     {/* --- CONDITIONAL INPUTS BASED ON MODE --- */}
-                     {mode === 'ai' ? (
-                         <>
-                            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={txt.phTopic} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
-                         </>
-                     ) : (
+                     {/* --- MANUAL MODE INPUTS --- */}
+                     {mode === 'manual' && (
+                         <div className="space-y-3">
+                             <div>
+                                 <label className="text-xs font-bold text-slate-500 ml-1">Title</label>
+                                 <input value={manualTitle} onChange={e => setManualTitle(e.target.value)} placeholder={txt.phLinkTitle} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                             </div>
+                             <div>
+                                 <label className="text-xs font-bold text-slate-500 ml-1">Link URL</label>
+                                 <input value={manualLink} onChange={e => setManualLink(e.target.value)} placeholder={txt.phLinkUrl} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" />
+                             </div>
+                         </div>
+                     )}
+
+                     {/* --- AI MODE INPUTS --- */}
+                     {mode === 'ai' && (
+                         <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={txt.phTopic} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                     )}
+                     {mode === 'convert' && (
                          <textarea value={rawText} onChange={e => setRawText(e.target.value)} placeholder={txt.phText} className="w-full p-3 border rounded-xl h-40 focus:ring-2 focus:ring-indigo-500 outline-none" />
                      )}
 
                      {/* YouTube Link Input */}
-                     <div className="relative">
+                     <div className="relative mt-4">
                         <label className="text-xs font-bold text-slate-500 ml-1 mb-1 block">YouTube Video Lecture Link (Optional)</label>
                         <div className="relative">
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-red-500">
-                                📺
-                            </div>
+                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-red-500">📺</div>
                             <input 
                                 value={youtubeLink} 
                                 onChange={e => setYoutubeLink(e.target.value)} 
                                 placeholder="Paste YouTube Video Link here..." 
                                 className="w-full p-3 pl-10 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm bg-red-50 border-red-100 text-red-900 placeholder-red-300" 
                             />
-                            {previewId && (
-                                <div className="absolute inset-y-0 right-3 flex items-center text-green-600 font-bold text-xs">
-                                    ✓ Valid
-                                </div>
-                            )}
+                            {previewId && <div className="absolute inset-y-0 right-3 flex items-center text-green-600 font-bold text-xs">✓ Valid</div>}
                         </div>
                      </div>
 
                      {/* Privacy Toggle */}
-                     <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                     <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 mt-2">
                         <div className={`w-10 h-6 rounded-full p-1 cursor-pointer transition-colors ${isPrivate ? 'bg-indigo-600' : 'bg-slate-300'}`} onClick={() => setIsPrivate(!isPrivate)}>
                             <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isPrivate ? 'translate-x-4' : 'translate-x-0'}`}></div>
                         </div>
@@ -392,32 +440,40 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
 
                      {/* Control Flow */}
                      <div className="pt-4 space-y-3">
-                        {step === 0 && (
-                            <button onClick={handleGenEnglish} disabled={isGenerating} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md hover:shadow-lg transition-all">
-                                {isGenerating ? 'Generating...' : (editingId ? 'Regenerate English Content' : txt.btnGenEn)}
+                        {mode === 'manual' ? (
+                            <button onClick={handleSave} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl hover:bg-opacity-90 transform active:scale-95 transition-all">
+                                {editingId ? txt.btnUpdate : txt.manualSave}
                             </button>
-                        )}
+                        ) : (
+                            <>
+                                {step === 0 && (
+                                    <button onClick={handleGenEnglish} disabled={isGenerating} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-md hover:shadow-lg transition-all">
+                                        {isGenerating ? 'Generating...' : (editingId ? 'Regenerate English Content' : txt.btnGenEn)}
+                                    </button>
+                                )}
 
-                        {step === 1 && (
-                             <button disabled className="w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold cursor-not-allowed flex justify-center items-center gap-2 border border-slate-200">
-                                 <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                                 {txt.cooling} ({cooldown}s)
-                             </button>
-                        )}
+                                {step === 1 && (
+                                     <button disabled className="w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold cursor-not-allowed flex justify-center items-center gap-2 border border-slate-200">
+                                         <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                         {txt.cooling} ({cooldown}s)
+                                     </button>
+                                )}
 
-                        {step === 2 && (
-                             <button onClick={handleGenHindi} disabled={isGenerating} className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 shadow-md hover:shadow-lg transition-all">
-                                 {isGenerating ? 'Translating...' : (editingId && hindiNote ? 'Regenerate Hindi' : txt.btnGenHi)}
-                             </button>
-                        )}
+                                {step === 2 && (
+                                     <button onClick={handleGenHindi} disabled={isGenerating} className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 shadow-md hover:shadow-lg transition-all">
+                                         {isGenerating ? 'Translating...' : (editingId && hindiNote ? 'Regenerate Hindi' : txt.btnGenHi)}
+                                     </button>
+                                )}
 
-                        {(step === 2 || step === 3) && (
-                            <div className="space-y-2">
-                                {step === 3 && <div className="text-center text-sm font-bold text-green-600 bg-green-50 p-2 rounded-lg border border-green-100">✅ All Ready!</div>}
-                                <button onClick={handleSave} className={`w-full text-white py-4 rounded-xl font-bold shadow-xl hover:bg-opacity-90 transform active:scale-95 transition-all ${editingId ? 'bg-amber-600' : 'bg-slate-900'}`}>
-                                    {editingId ? txt.btnUpdate : txt.btnSave}
-                                </button>
-                            </div>
+                                {(step === 2 || step === 3) && (
+                                    <div className="space-y-2">
+                                        {step === 3 && <div className="text-center text-sm font-bold text-green-600 bg-green-50 p-2 rounded-lg border border-green-100">✅ All Ready!</div>}
+                                        <button onClick={handleSave} className={`w-full text-white py-4 rounded-xl font-bold shadow-xl hover:bg-opacity-90 transform active:scale-95 transition-all ${editingId ? 'bg-amber-600' : 'bg-slate-900'}`}>
+                                            {editingId ? txt.btnUpdate : txt.btnSave}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                         
                         <button onClick={editingId ? cancelEditing : () => setStep(0)} className="w-full py-2 text-xs text-red-400 underline hover:text-red-600">
@@ -429,7 +485,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
                 {/* Preview Area */}
                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 h-[600px] overflow-y-auto">
                     <h3 className="font-bold text-slate-400 uppercase tracking-widest text-xs mb-4 text-center">Preview Window</h3>
-                    {englishNote ? (
+                    {mode === 'manual' ? (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                            <span className="text-4xl">🔗</span>
+                            <span className="font-bold">Manual Link Mode</span>
+                            <span className="text-xs">No preview available for external links.</span>
+                        </div>
+                    ) : englishNote ? (
                         <div className="space-y-6">
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
                                 <div className="flex justify-between items-center mb-2">
@@ -438,7 +500,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
                                 </div>
                                 <h4 className="font-bold text-lg">{englishNote.title}</h4>
                                 <p className="text-xs text-slate-500 mt-1">Subject: {englishNote.subject}</p>
-                                {youtubeLink && <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-bold">📺 Video Attached: {youtubeLink}</p>}
+                                {youtubeLink && <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-bold">📺 Video Attached</p>}
                                 <div className="mt-2 p-2 bg-slate-50 rounded text-xs text-slate-600 font-mono overflow-hidden h-20">
                                     {JSON.stringify(englishNote.sections[0], null, 2)}...
                                 </div>
@@ -488,7 +550,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
                                     <span className="bg-slate-100 px-2 py-0.5 rounded border">{note.subject}</span>
                                     <span className="text-slate-400">ID: {note.id}</span>
                                     {note.smartContentHindi && <span className="text-green-600 font-bold text-[10px] border border-green-200 px-1 rounded bg-green-50">HI Available</span>}
-                                    {note.youtubeUrl && <span className="text-red-500 font-bold text-[10px] border border-red-200 px-1 rounded bg-red-50">📺 Video</span>}
+                                    {note.pdfUrl && <span className="text-blue-600 font-bold text-[10px] border border-blue-200 px-1 rounded bg-blue-50">🔗 Link</span>}
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -526,59 +588,42 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ notes, onAddNote, onDeleteNote,
                         🎮 Control Center
                     </h3>
 
-                    {/* USAGE METER */}
-                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
-                        <div className="flex justify-between items-end mb-2">
-                            <div>
-                                <h4 className="font-bold text-slate-800">Daily AI Usage Meter</h4>
-                                <p className="text-xs text-slate-500">Live tracking of your API requests (Resets daily).</p>
-                            </div>
-                            <div className="text-right">
-                                <span className={`text-2xl font-black ${quota.count >= quota.limit ? 'text-red-600' : 'text-indigo-600'}`}>
-                                    {quota.count}
-                                </span>
-                                <span className="text-sm font-bold text-slate-400"> / {quota.limit}</span>
-                            </div>
+                    {/* AI Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div>
+                            <div className="font-bold text-slate-800">Enable AI Features</div>
+                            <div className="text-xs text-slate-500">Toggle "Deep Think", Chat, and Quiz Maker features.</div>
                         </div>
-                        <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                            <div 
-                                className={`h-full transition-all duration-500 ${quota.count >= quota.limit ? 'bg-red-500' : 'bg-indigo-500'}`} 
-                                style={{ width: `${Math.min((quota.count / quota.limit) * 100, 100)}%` }}
-                            ></div>
-                        </div>
-                        {quota.count >= quota.limit && (
-                            <div className="mt-2 text-xs font-bold text-red-600 bg-red-50 p-2 rounded border border-red-100 flex items-center gap-2">
-                                ⚠️ Quota Reached. Please wait for tomorrow.
-                            </div>
-                        )}
+                        <button 
+                            onClick={() => onUpdateAiEnabled(!aiEnabled)}
+                            className={`w-14 h-8 rounded-full p-1 transition-colors ${aiEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
+                        >
+                            <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${aiEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
                     </div>
-                    
+
+                    {/* Site Intro Editor */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                        <h4 className="font-bold text-slate-800 mb-2">Edit Site Intro / About Us</h4>
+                        <textarea 
+                            value={tempIntro} 
+                            onChange={(e) => setTempIntro(e.target.value)} 
+                            className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            rows={3}
+                        />
+                        <button onClick={() => onUpdateSiteIntro(tempIntro)} className="mt-2 text-xs bg-slate-900 text-white px-4 py-2 rounded-lg font-bold">Save Text</button>
+                    </div>
+
+                    {/* Audio Controls */}
                     <div className="flex flex-col md:flex-row items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 gap-4">
                         <div>
-                            <div className="font-bold text-slate-800">Public Audio Access (Classroom)</div>
-                            <div className="text-xs text-slate-500">
-                                Control who can access the AI-powered audio class feature.
-                            </div>
+                            <div className="font-bold text-slate-800">Public Audio Access</div>
+                            <div className="text-xs text-slate-500">Controls AI-powered audio class features.</div>
                         </div>
                         <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-                            <button 
-                                onClick={() => onUpdateAudioAccessLevel('locked')}
-                                className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${audioAccessLevel === 'locked' ? 'bg-red-100 text-red-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                            >
-                                🔒 Locked
-                            </button>
-                            <button 
-                                onClick={() => onUpdateAudioAccessLevel('admin')}
-                                className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${audioAccessLevel === 'admin' ? 'bg-yellow-100 text-yellow-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                            >
-                                🛡️ Admin Only
-                            </button>
-                            <button 
-                                onClick={() => onUpdateAudioAccessLevel('public')}
-                                className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${audioAccessLevel === 'public' ? 'bg-green-100 text-green-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
-                            >
-                                🌍 Public
-                            </button>
+                            <button onClick={() => onUpdateAudioAccessLevel('locked')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${audioAccessLevel === 'locked' ? 'bg-red-100 text-red-700' : 'text-slate-500'}`}>🔒 Locked</button>
+                            <button onClick={() => onUpdateAudioAccessLevel('admin')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${audioAccessLevel === 'admin' ? 'bg-yellow-100 text-yellow-700' : 'text-slate-500'}`}>🛡️ Admin</button>
+                            <button onClick={() => onUpdateAudioAccessLevel('public')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${audioAccessLevel === 'public' ? 'bg-green-100 text-green-700' : 'text-slate-500'}`}>🌍 Public</button>
                         </div>
                     </div>
                 </div>

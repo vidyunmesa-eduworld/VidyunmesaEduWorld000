@@ -288,13 +288,16 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
   // Video State
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
+  // --- MANUAL NOTE DETECTION ---
+  const isManualNote = !rawNote?.smartContent && !!rawNote?.pdfUrl;
+
   const blocks = useMemo(() => {
-      if (!rawNote) return [];
+      if (!rawNote || isManualNote) return [];
       const baseNote = (language === 'hi' && rawNote.smartContentHindi) 
           ? rawNote.smartContentHindi 
           : (rawNote.smartContent || rawNote);
       return normalizeNoteContent(baseNote);
-  }, [rawNote, language]);
+  }, [rawNote, language, isManualNote]);
 
   const script = useMemo(() => {
       if (blocks.length === 0) return [];
@@ -512,40 +515,37 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
       playSequence();
   };
 
-  // --- 100% FIXED PRINT HANDLER (VISIBILITY TOGGLE + COLOR PRESERVATION) ---
+  // --- 100% FIXED PRINT HANDLER (SVG PATTERN) ---
   const handlePrint = () => {
-    // Inject strict print styles if not already present
     if (typeof window !== 'undefined') {
         let style = document.getElementById('print-style-fix');
         if(!style) {
             style = document.createElement('style');
             style.id = 'print-style-fix';
+            
+            // --- PROFESSIONAL SVG PATTERN (Base64) ---
+            // "Vidyunmesā EduWorld" repeated diagonally
+            const svgString = `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'>
+              <text x='50%' y='50%' fill='rgba(0,0,0,0.08)' font-size='24' font-weight='bold' font-family='sans-serif' text-anchor='middle' dominant-baseline='middle' transform='rotate(-45 150 150)'>Vidyunmesā EduWorld</text>
+            </svg>`;
+            const svgUrl = `data:image/svg+xml;base64,${window.btoa(svgString)}`;
+
             style.innerHTML = `
                 @media print {
-                    /* RESET GLOBAL STYLES */
+                    @page { margin: 0; size: auto; }
                     html, body, #root {
                         width: 100% !important;
-                        height: auto !important;
-                        overflow: visible !important;
+                        height: 100% !important;
                         margin: 0 !important;
                         padding: 0 !important;
                         background: white !important;
-                        position: static !important;
                     }
+                    
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-                    /* COLOR FIX: Enable exact color printing */
-                    * {
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
-
-                    /* HIDE EVERYTHING using visibility */
-                    body * {
-                        visibility: hidden;
-                    }
+                    body * { visibility: hidden; }
 
                     /* DISPLAY ONLY OUR PRINT PORTAL */
-                    /* Force it to be visible, absolute, and start at top-left */
                     #printable-content, #printable-content * {
                         visibility: visible !important;
                     }
@@ -555,78 +555,45 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
                         left: 0 !important;
                         top: 0 !important;
                         width: 100% !important;
-                        height: auto !important;
-                        z-index: 9999 !important;
+                        z-index: 50 !important;
                         background: white !important;
                         padding: 20px !important;
                         margin: 0 !important;
-                        color: #1e293b; /* Default dark text (slate-800) instead of black */
+                        color: #1e293b;
                     }
 
-                    /* PRESERVE HIGHLIGHT COLORS EXPLICITLY */
-                    .highlight-span {
-                        background-color: #e0e7ff !important; /* indigo-100 */
-                        color: #312e81 !important; /* indigo-900 */
-                        border: 1px solid #c7d2fe !important;
-                    }
-                    
-                    /* PRESERVE CALLOUT COLORS */
-                    .bg-red-50\\/50 { background-color: #fef2f2 !important; border-color: #f87171 !important; color: #7f1d1d !important; }
-                    .bg-purple-50\\/50 { background-color: #faf5ff !important; border-color: #c084fc !important; color: #581c87 !important; }
-                    .bg-blue-50\\/50 { background-color: #eff6ff !important; border-color: #60a5fa !important; color: #1e3a8a !important; }
-                    .bg-green-50\\/50 { background-color: #f0fdf4 !important; border-color: #4ade80 !important; color: #14532d !important; }
-                    .bg-amber-50\\/50 { background-color: #fffbeb !important; border-color: #fbbf24 !important; color: #78350f !important; }
-
-                    /* HIDE NO-PRINT ELEMENTS explicitly */
-                    .no-print {
-                        display: none !important;
-                        visibility: hidden !important;
-                    }
-                    
-                    /* Fix layout for printed items */
-                    .note-block {
-                        break-inside: avoid;
-                        page-break-inside: avoid;
-                        margin-bottom: 20px !important;
-                        border: 1px solid #eee !important;
-                    }
-
-                    /* Watermark Logic: CLEAN GRID OVERLAY MODE */
-                    .print-watermark {
-                        display: grid !important;
-                        grid-template-columns: repeat(2, 1fr) !important;
-                        grid-template-rows: repeat(4, 1fr) !important;
-                        visibility: visible !important;
-                        position: fixed !important; /* Fixed ensures repeat on every page */
-                        inset: 0 !important;
+                    /* WATERMARK OVERLAY (FIXED ON EVERY PAGE) */
+                    .watermark-overlay {
+                        position: fixed !important;
+                        top: 0 !important;
+                        left: 0 !important;
                         width: 100vw !important;
                         height: 100vh !important;
-                        z-index: 2147483647 !important; /* Topmost layer */
-                        opacity: 0.08 !important; /* Very subtle opacity */
+                        z-index: 2147483647 !important; /* Maximum Z */
                         pointer-events: none !important;
-                        background: transparent !important;
-                        align-items: center;
-                        justify-items: center;
+                        background-image: url("${svgUrl}") !important;
+                        background-repeat: repeat !important;
+                        background-size: 300px 300px !important;
+                        visibility: visible !important;
+                        display: block !important;
                     }
+
+                    .no-print { display: none !important; }
+                    .note-block { break-inside: avoid; margin-bottom: 20px !important; border: 1px solid #eee !important; }
                     
-                    .print-watermark-item {
-                        transform: rotate(-45deg);
-                        font-size: 24px;
-                        font-weight: 900;
-                        color: #000;
-                        text-transform: uppercase;
-                        letter-spacing: 4px;
-                        white-space: nowrap;
-                    }
+                    /* Highlight Colors */
+                    .highlight-span { background-color: #e0e7ff !important; color: #312e81 !important; border: 1px solid #c7d2fe !important; }
+                    .bg-red-50\\/50 { background-color: #fef2f2 !important; }
+                    .bg-purple-50\\/50 { background-color: #faf5ff !important; }
+                    .bg-blue-50\\/50 { background-color: #eff6ff !important; }
+                    .bg-green-50\\/50 { background-color: #f0fdf4 !important; }
+                    .bg-amber-50\\/50 { background-color: #fffbeb !important; }
                 }
             `;
             document.head.appendChild(style);
         }
     }
-
-    setTimeout(() => {
-        window.print();
-    }, 300);
+    setTimeout(() => { window.print(); }, 500);
   };
 
   // --- ROBUST YOUTUBE ID EXTRACTOR ---
@@ -642,284 +609,254 @@ const SmartNoteReader: React.FC<SmartNoteReaderProps> = ({
   return (
       <div className="min-h-screen bg-[#f8f9fa]/80 backdrop-blur-sm pb-40 font-sans relative">
           
-          {/* HEADER (Hidden in Print via CSS) */}
+          {/* HEADER */}
           <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b shadow-sm px-4 py-3 no-print">
               <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
                   <button onClick={() => { fullStop(); onBack(); }} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   </button>
                   
-                  <div className="flex-1">
-                      {!canPlayAudio ? (
-                           <div className="flex justify-center text-xs font-bold text-red-500 uppercase tracking-widest bg-red-50 py-1.5 rounded-lg border border-red-100">
-                               Premium Audio Feature Locked
-                           </div>
-                      ) : !userHasInitialized ? (
-                          <div className="flex justify-center">
-                              <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Audio Class Available</span>
-                          </div>
-                      ) : !isReadyToPlay ? (
-                          <div className="space-y-1">
-                              <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                                  <span>Buffering Class Resources...</span>
-                                  <span>{downloadProgress}% / {INITIAL_BUFFER_THRESHOLD}%</span>
+                  <div className="flex-1 flex justify-center">
+                      {isManualNote ? (
+                          <span className="text-sm font-bold text-slate-500 uppercase tracking-wide">External Resource</span>
+                      ) : (
+                          !canPlayAudio ? (
+                               <div className="text-xs font-bold text-red-500 uppercase tracking-widest bg-red-50 py-1.5 px-3 rounded-lg border border-red-100">
+                                   Audio Locked
+                               </div>
+                          ) : !userHasInitialized ? (
+                              <div className="flex justify-center">
+                                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Audio Class Available</span>
                               </div>
-                              <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                                  <div className="h-full bg-amber-500 transition-all duration-300 relative overflow-hidden" style={{width: `${downloadProgress}%`}}>
-                                     <div className="absolute inset-0 bg-white/30 animate-[shimmer_1s_infinite]"></div>
+                          ) : !isReadyToPlay ? (
+                              <div className="space-y-1 w-full max-w-[200px]">
+                                  <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                                      <span>Buffering...</span>
+                                      <span>{downloadProgress}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                                      <div className="h-full bg-amber-500 transition-all duration-300 relative overflow-hidden" style={{width: `${downloadProgress}%`}}>
+                                         <div className="absolute inset-0 bg-white/30 animate-[shimmer_1s_infinite]"></div>
+                                      </div>
                                   </div>
                               </div>
-                          </div>
-                      ) : (
-                          <div className="space-y-1">
-                              <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-                                  <span>Class Progress</span>
-                                  <span>{Math.round(progress)}%</span>
+                          ) : (
+                              <div className="space-y-1 w-full max-w-[200px]">
+                                  <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+                                      <span>Progress</span>
+                                      <span>{Math.round(progress)}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                                      <div className="h-full bg-indigo-600 transition-all duration-500" style={{width: `${progress}%`}}></div>
+                                  </div>
                               </div>
-                              <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                                  <div className="h-full bg-indigo-600 transition-all duration-500" style={{width: `${progress}%`}}></div>
-                              </div>
-                          </div>
+                          )
                       )}
                   </div>
 
                   <div className="flex gap-2">
-                       {/* Download / Print Button */}
-                       <button 
-                           onClick={handlePrint}
-                           className="shrink-0 p-2.5 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center group relative"
-                           title="Save PDF / Print"
-                       >
-                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                           <span className="absolute top-10 right-0 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">Save PDF</span>
-                       </button>
+                       {!isManualNote && (
+                           <button 
+                               onClick={handlePrint}
+                               className="shrink-0 p-2.5 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center group relative"
+                               title="Save PDF / Print"
+                           >
+                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                           </button>
+                       )}
 
-                      {!canPlayAudio ? (
-                          <button disabled className="shrink-0 flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-white shadow-sm bg-slate-800 opacity-80 cursor-not-allowed">
-                              <span>🔒 Locked</span>
-                          </button>
-                      ) : !userHasInitialized ? (
-                          <button 
-                              onClick={() => setUserHasInitialized(true)}
-                              className="shrink-0 flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-white shadow-lg transition-all transform active:scale-95 bg-indigo-600 hover:bg-indigo-700 animate-pulse"
-                          >
-                              <span>🎧 Load Audio Class</span>
-                          </button>
-                      ) : (
-                          <button 
-                              onClick={isPlaying ? fullStop : handleStart}
-                              disabled={!isReadyToPlay}
-                              className={`shrink-0 flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-white shadow-lg transition-all transform active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed ${isPlaying ? 'bg-rose-500 hover:bg-rose-600' : (isReadyToPlay ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400')}`}
-                          >
-                              {!isReadyToPlay ? (
-                                  <span className="flex gap-2 items-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> {downloadProgress}%</span>
-                              ) : (
-                                  isPlaying ? <span>⏸ Pause</span> : <span>▶ Start Class</span>
-                              )}
-                          </button>
+                      {!isManualNote && canPlayAudio && (
+                          !userHasInitialized ? (
+                              <button 
+                                  onClick={() => setUserHasInitialized(true)}
+                                  className="shrink-0 flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-white shadow-lg transition-all transform active:scale-95 bg-indigo-600 hover:bg-indigo-700 animate-pulse"
+                              >
+                                  <span>🎧 Load Class</span>
+                              </button>
+                          ) : (
+                              <button 
+                                  onClick={isPlaying ? fullStop : handleStart}
+                                  disabled={!isReadyToPlay}
+                                  className={`shrink-0 flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-white shadow-lg transition-all transform active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed ${isPlaying ? 'bg-rose-500 hover:bg-rose-600' : (isReadyToPlay ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400')}`}
+                              >
+                                  {!isReadyToPlay ? (
+                                      <span className="flex gap-2 items-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> {downloadProgress}%</span>
+                                  ) : (
+                                      isPlaying ? <span>⏸ Pause</span> : <span>▶ Start</span>
+                                  )}
+                              </button>
+                          )
                       )}
                   </div>
               </div>
-              
-              <div className="max-w-2xl mx-auto mt-3 text-center relative min-h-[3rem] flex items-center justify-center px-4 no-print">
-                   <p className={`text-sm md:text-lg font-medium text-indigo-900 transition-all duration-300 leading-snug`}>
-                      {!canPlayAudio ? "Contact Admin to unlock this Premium Audio Class feature." : (!userHasInitialized ? "Tap the button above to start downloading audio materials." : (!isReadyToPlay ? "Please wait, we are securing a high-speed connection..." : (isPlaying ? `"${currentSubtitle}"` : "Resources Ready. Tap Start to begin the session.")))}
-                   </p>
-              </div>
           </div>
 
-          {/* PRINT PORTAL WRAPPER: This ID is crucial for the CSS fix */}
-          <div id="printable-content" className="max-w-3xl mx-auto p-4 md:p-8 space-y-12 relative z-10">
-              
-              {/* WATERMARK (Visible in Print) - CLEAN GRID OVERLAY */}
-              <div className="print-watermark" aria-hidden="true">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="print-watermark-item">
-                          Vidyunmesā EduWorld
-                      </div>
-                  ))}
-              </div>
+          {/* WATERMARK OVERLAY (Pattern) - ALWAYS VISIBLE IN PRINT */}
+          <div className="watermark-overlay"></div>
 
-              {blocks.length === 0 ? (
-                  <div className="text-center py-20 text-slate-400 animate-pulse">
-                      <div className="text-6xl mb-4">🎓</div>
-                      <h3 className="text-xl font-bold">Preparing your Classroom...</h3>
+          {/* CONTENT PORTAL */}
+          <div id="printable-content" className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 relative z-10">
+              
+              {/* --- MANUAL NOTE RENDERER: EMBEDDED VIEWER STRATEGY --- */}
+              {isManualNote ? (
+                  <div className="flex flex-col space-y-6 h-full animate-fade-in">
+                      {/* Title Header */}
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                          <h2 className="text-2xl font-bold text-slate-800">{rawNote.title}</h2>
+                          <div className="flex items-center gap-2 mt-2 text-sm text-slate-500">
+                              <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded border border-indigo-100 font-bold">{rawNote.subject}</span>
+                              <span>• External Resource</span>
+                          </div>
+                      </div>
+
+                      {/* Embedded Viewer (Full Height) */}
+                      <div className="flex-1 w-full bg-slate-100 rounded-2xl border border-slate-300 overflow-hidden shadow-inner relative min-h-[70vh]">
+                          {/* If it's a direct PDF or embeddable link, show it */}
+                          <iframe 
+                              src={rawNote.pdfUrl} 
+                              className="w-full h-full absolute inset-0"
+                              title="Resource Viewer"
+                              loading="lazy"
+                          />
+                          {/* Fallback overlay if iframe fails to load due to restrictions */}
+                          <div className="absolute inset-0 -z-10 flex items-center justify-center text-slate-400">
+                              Loading content...
+                          </div>
+                      </div>
+
+                      {/* Download / Redirect Action */}
+                      <div className="flex justify-center">
+                          <a 
+                              href={rawNote.pdfUrl} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="px-8 py-4 bg-slate-900 text-white rounded-full font-bold text-lg shadow-xl hover:scale-105 transition-transform flex items-center gap-3"
+                          >
+                              📥 Download / Open Original Link
+                          </a>
+                      </div>
                   </div>
               ) : (
+                  /* --- SMART NOTE RENDERER (Keep Existing Logic) --- */
                   <>
-                  {blocks.map((block) => {
-                      const isActive = activeBlockId === block.id;
-                      // Note: In print, 'activeClass' background logic will be overridden by print CSS to keep it clean
-                      const activeClass = isActive ? "ring-2 ring-indigo-500 ring-offset-4 scale-[1.02] shadow-2xl border-indigo-200 bg-white z-10" : "bg-white border-slate-200 hover:border-indigo-300 hover:shadow-lg";
+                  {blocks.length === 0 ? (
+                      <div className="text-center py-20 text-slate-400 animate-pulse">
+                          <div className="text-6xl mb-4">🎓</div>
+                          <h3 className="text-xl font-bold">Preparing your Classroom...</h3>
+                      </div>
+                  ) : (
+                      blocks.map((block) => {
+                          const isActive = activeBlockId === block.id;
+                          const activeClass = isActive ? "ring-2 ring-indigo-500 ring-offset-4 scale-[1.02] shadow-2xl border-indigo-200 bg-white z-10" : "bg-white border-slate-200 hover:border-indigo-300 hover:shadow-lg";
 
-                      if (block.type === 'header') {
+                          if (block.type === 'header') {
+                              return (
+                                 <div id={block.id} key={block.id} className={`pt-10 pb-4 transition-all duration-500 note-block ${isActive ? 'opacity-100 transform translate-x-2' : 'opacity-90'}`}>
+                                     <h2 className={`font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-700 ${block.depth === 0 ? 'text-4xl md:text-5xl border-b-2 border-indigo-100 pb-4 mb-4' : 'text-2xl md:text-3xl'}`} style={{ color: 'black', WebkitTextFillColor: 'initial', backgroundImage: 'none' }}>
+                                         {renderRichText(block.title || "")}
+                                     </h2>
+                                 </div>
+                              );
+                          }
+
                           return (
-                             <div id={block.id} key={block.id} className={`pt-10 pb-4 transition-all duration-500 note-block ${isActive ? 'opacity-100 transform translate-x-2' : 'opacity-90'}`}>
-                                 <h2 className={`font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-700 ${block.depth === 0 ? 'text-4xl md:text-5xl border-b-2 border-indigo-100 pb-4 mb-4' : 'text-2xl md:text-3xl'}`} style={{ color: 'black', WebkitTextFillColor: 'initial', backgroundImage: 'none' }}>
-                                     {renderRichText(block.title || "")}
-                                 </h2>
-                             </div>
-                          );
-                      }
+                              <div id={block.id} key={block.id} className={`p-6 md:p-10 rounded-2xl border transition-all duration-500 relative note-block ${activeClass}`}>
+                                  {block.title && <h3 className="font-bold text-2xl mb-6 text-slate-800 tracking-tight">{renderRichText(block.title)}</h3>}
+                                  
+                                  {block.type === 'text' && (
+                                      <p className="text-slate-700 text-lg md:text-xl leading-loose tracking-wide whitespace-pre-wrap flex items-start gap-3">
+                                         <span className="mt-1.5 text-indigo-400 no-print">🔹</span>
+                                         <span>{renderRichText(block.content || "")}</span>
+                                      </p>
+                                  )}
 
-                      return (
-                          <div id={block.id} key={block.id} className={`p-6 md:p-10 rounded-2xl border transition-all duration-500 relative note-block ${activeClass}`}>
-                              {isActive && <div className="absolute -left-3 top-10 w-1.5 h-16 bg-indigo-500 rounded-r-full shadow-lg no-print"></div>}
-                              
-                              {block.title && <h3 className="font-bold text-2xl mb-6 text-slate-800 tracking-tight">{renderRichText(block.title)}</h3>}
-                              
-                              {block.type === 'text' && (
-                                  <p className="text-slate-700 text-lg md:text-xl leading-loose tracking-wide whitespace-pre-wrap flex items-start gap-3">
-                                     <span className="mt-1.5 text-indigo-400 no-print">🔹</span>
-                                     <span>{renderRichText(block.content || "")}</span>
-                                  </p>
-                              )}
-
-                              {block.type === 'list' && (
-                                  <ul className="space-y-6">
-                                      {block.items?.map((item, i) => {
-                                          let itemText = "";
-                                          let itemDetails: React.ReactNode = null;
-
-                                          if (typeof item === 'string') {
-                                              itemText = item;
-                                          } else if (typeof item === 'object' && item !== null) {
-                                              if (item.text) itemText = item.text;
-                                              else if (item.heading) {
-                                                  itemText = item.heading;
-                                                  if (item.details) {
-                                                       if (Array.isArray(item.details)) {
-                                                           itemDetails = <ul className="list-disc pl-5 mt-2 space-y-2 text-base text-slate-600 leading-relaxed">
-                                                               {item.details.map((d:string, k:number) => <li key={k}>{renderRichText(d)}</li>)}
-                                                           </ul>;
-                                                       } else {
-                                                           itemDetails = <div className="text-base text-slate-600 mt-2 leading-relaxed">{renderRichText(item.details)}</div>;
-                                                       }
+                                  {block.type === 'list' && (
+                                      <ul className="space-y-6">
+                                          {block.items?.map((item, i) => {
+                                              let itemText = "";
+                                              let itemDetails: React.ReactNode = null;
+                                              if (typeof item === 'string') { itemText = item; } 
+                                              else if (typeof item === 'object' && item !== null) {
+                                                  if (item.text) itemText = item.text;
+                                                  else if (item.heading) {
+                                                      itemText = item.heading;
+                                                      if (item.details) {
+                                                           if (Array.isArray(item.details)) {
+                                                               itemDetails = <ul className="list-disc pl-5 mt-2 space-y-2 text-base text-slate-600 leading-relaxed">{item.details.map((d:string, k:number) => <li key={k}>{renderRichText(d)}</li>)}</ul>;
+                                                           } else {
+                                                               itemDetails = <div className="text-base text-slate-600 mt-2 leading-relaxed">{renderRichText(item.details)}</div>;
+                                                           }
+                                                      }
                                                   }
                                               }
-                                          }
+                                              const prefix = "🔸 ";
+                                              return (
+                                                  <li key={i} className="flex gap-4 items-start">
+                                                      <span className="shrink-0 w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm mt-1 border border-indigo-100 shadow-sm no-print">{i + 1}</span>
+                                                      <div className="text-slate-700 text-lg md:text-xl leading-loose tracking-wide">
+                                                          <span className="font-medium">{prefix}{renderRichText(itemText)}</span>
+                                                          {itemDetails}
+                                                      </div>
+                                                  </li>
+                                              );
+                                          })}
+                                      </ul>
+                                  )}
 
-                                          // Force an Emoji if the string doesn't start with one (Basic heuristic)
-                                          const hasEmoji = /^\p{Emoji}/u.test(itemText);
-                                          const prefix = !hasEmoji ? "🔸 " : "";
-                                          
-                                          return (
-                                              <li key={i} className="flex gap-4 items-start">
-                                                  <span className="shrink-0 w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm mt-1 border border-indigo-100 shadow-sm no-print">
-                                                      {i + 1}
-                                                  </span>
-                                                  <div className="text-slate-700 text-lg md:text-xl leading-loose tracking-wide">
-                                                      <span className="font-medium">{prefix}{renderRichText(itemText)}</span>
-                                                      {itemDetails}
-                                                  </div>
-                                              </li>
-                                          );
-                                      })}
-                                  </ul>
-                              )}
-
-                              {block.type === 'table' && block.tableData && (
-                                  <div className="overflow-hidden rounded-xl border border-slate-200 mt-4 shadow-sm">
-                                      <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-base">
-                                            <thead className="bg-slate-100 text-slate-800 font-bold uppercase tracking-wider text-xs">
-                                                <tr>
-                                                    {block.tableData.headers.map((h, i) => <th key={i} className="p-4 whitespace-nowrap">{renderRichText(h)}</th>)}
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {block.tableData.rows.map((row, r) => (
-                                                    <tr key={r} className="hover:bg-indigo-50/30 transition-colors">
-                                                        {row.map((c, ci) => <td key={ci} className="p-4 text-slate-700 leading-relaxed">{renderRichText(c)}</td>)}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                  {block.type === 'table' && block.tableData && (
+                                      <div className="overflow-hidden rounded-xl border border-slate-200 mt-4 shadow-sm">
+                                          <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-base">
+                                                <thead className="bg-slate-100 text-slate-800 font-bold uppercase tracking-wider text-xs">
+                                                    <tr>{block.tableData.headers.map((h, i) => <th key={i} className="p-4 whitespace-nowrap">{renderRichText(h)}</th>)}</tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {block.tableData.rows.map((row, r) => (
+                                                        <tr key={r} className="hover:bg-indigo-50/30 transition-colors">
+                                                            {row.map((c, ci) => <td key={ci} className="p-4 text-slate-700 leading-relaxed">{renderRichText(c)}</td>)}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                          </div>
                                       </div>
-                                  </div>
-                              )}
+                                  )}
 
-                              {block.type === 'callout' && (
-                                  <div className={`border-l-4 p-6 rounded-r-xl my-4 ${getCalloutStyles(block.color)}`}>
-                                      <div className="font-bold flex items-center gap-2 mb-2 text-lg">
-                                          <span className="text-2xl">{getCalloutIcon(block.color)}</span> {renderRichText(block.title || "Note")}
+                                  {block.type === 'callout' && (
+                                      <div className={`border-l-4 p-6 rounded-r-xl my-4 ${getCalloutStyles(block.color)}`}>
+                                          <div className="font-bold flex items-center gap-2 mb-2 text-lg">
+                                              <span className="text-2xl">{getCalloutIcon(block.color)}</span> {renderRichText(block.title || "Note")}
+                                          </div>
+                                          <p className="text-lg md:text-xl leading-relaxed">{renderRichText(block.content || "")}</p>
                                       </div>
-                                      <p className="text-lg md:text-xl leading-relaxed">{renderRichText(block.content || "")}</p>
-                                  </div>
-                              )}
-                          </div>
-                      );
-                  })}
+                                  )}
+                              </div>
+                          );
+                      })
+                  )}
 
                   {/* VIDEO SECTION */}
                   {youtubeId && (
                       <div className="mt-16 pt-10 border-t-2 border-slate-200 break-inside-avoid note-block">
-                          {/* WEB VIEW: VIDEO PLAYER (FACADE PATTERN) */}
                           <div className="video-player-frame bg-slate-900 rounded-3xl overflow-hidden shadow-2xl p-1 no-print">
                               <div className="bg-slate-800 px-6 py-4 flex items-center justify-between">
-                                  <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                                      <span className="text-red-500 text-2xl">📺</span> Video Class
-                                  </h2>
-                                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden xs:inline">Recommended Watch</span>
+                                  <h2 className="text-xl font-bold text-white flex items-center gap-3"><span className="text-red-500 text-2xl">📺</span> Video Class</h2>
                               </div>
-                              
-                              {/* Facade vs Iframe */}
                               <div className="aspect-video w-full bg-black relative group cursor-pointer">
                                   {!isVideoLoaded ? (
                                       <div onClick={() => setIsVideoLoaded(true)} className="absolute inset-0 flex items-center justify-center bg-black">
-                                          <img 
-                                            src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`} 
-                                            alt="Video Thumbnail" 
-                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                          />
-                                          <div className="absolute inset-0 flex items-center justify-center">
-                                              <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                                                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="white" className="ml-1"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                              </div>
-                                          </div>
+                                          <img src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`} alt="Video Thumbnail" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"/>
                                           <div className="absolute bottom-4 right-4 bg-black/80 text-white text-xs px-2 py-1 rounded font-bold">Click to Play</div>
                                       </div>
                                   ) : (
-                                      <iframe 
-                                          width="100%" 
-                                          height="100%" 
-                                          src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`} 
-                                          title="Video Lecture" 
-                                          frameBorder="0" 
-                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                          allowFullScreen
-                                          className="absolute inset-0"
-                                      ></iframe>
+                                      <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`} title="Video Lecture" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="absolute inset-0"></iframe>
                                   )}
                               </div>
-                              
-                              {/* FALLBACK BUTTON */}
                               <div className="bg-slate-800 px-4 py-4 text-center border-t border-slate-700">
-                                   <p className="text-slate-400 text-xs md:text-sm mb-3">
-                                      Video loading slow or restricted?
-                                   </p>
-                                   <a 
-                                      href={rawNote?.youtubeUrl} 
-                                      target="_blank" 
-                                      rel="noreferrer"
-                                      className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95 group"
-                                   >
+                                   <a href={rawNote?.youtubeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95 group">
                                       <span>Watch Directly on YouTube</span>
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
                                    </a>
                               </div>
-                          </div>
-
-                          {/* PRINT VIEW: VIDEO LINK (Fallback) */}
-                          <div className="hidden no-print" style={{ display: 'none' }}></div>
-                          <div className="hidden print:block p-6 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 mt-4 text-center">
-                              <h3 className="font-bold text-xl mb-2 flex items-center justify-center gap-2">
-                                  <span>📺</span> Video Class Available
-                              </h3>
-                              <p className="text-base text-slate-600 mb-2">Scan or visit the link to watch the full class for this topic:</p>
-                              <a href={rawNote?.youtubeUrl} className="text-blue-600 underline font-mono text-sm break-all font-bold">
-                                  {rawNote?.youtubeUrl}
-                              </a>
                           </div>
                       </div>
                   )}
